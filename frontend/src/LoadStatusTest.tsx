@@ -90,8 +90,12 @@ const LoadStatusTest: React.FC = () => {
         return '#4CAF50'; // 绿色
       case 'high':
         return '#f44336'; // 红色
+      case 'offline':
+        return '#757575'; // 深灰色
+      case 'no_data':
+        return '#FF9800'; // 橙色
       case 'not_found':
-        return '#9E9E9E'; // 灰色
+        return '#9E9E9E'; // 浅灰色
       default:
         return '#FF9800'; // 橙色
     }
@@ -103,6 +107,10 @@ const LoadStatusTest: React.FC = () => {
         return '正常';
       case 'high':
         return '高负载';
+      case 'offline':
+        return '离线';
+      case 'no_data':
+        return '无数据';
       case 'not_found':
         return '未找到';
       default:
@@ -133,7 +141,7 @@ const LoadStatusTest: React.FC = () => {
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <input
             type="text"
-            placeholder="类型 (如: proxy, cache, server)"
+            placeholder="类型 (如: ss, v2ray, trojan...)"
             value={newType}
             onChange={(e) => setNewType(e.target.value)}
             style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px', flex: 1 }}

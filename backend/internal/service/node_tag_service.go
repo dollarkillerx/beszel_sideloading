@@ -80,6 +80,18 @@ func (s *NodeTagService) GetNodeLoadStatus(requests []models.NodeLoadRequest, sy
 	db := database.GetDB()
 	var responses []models.NodeLoadResponse
 	
+	// 获取所有系统基本信息（包含状态）
+	systems, err := systemService.GetSystems()
+	if err != nil {
+		return nil, fmt.Errorf("获取系统信息失败: %w", err)
+	}
+	
+	// 创建系统ID到系统信息的映射
+	systemInfoMap := make(map[string]*models.System)
+	for _, system := range systems {
+		systemInfoMap[system.ID] = system
+	}
+	
 	// 获取所有系统的统计数据
 	systemsWithStats, err := systemService.GetSystemsWithAvgStats()
 	if err != nil {
@@ -103,16 +115,25 @@ func (s *NodeTagService) GetNodeLoadStatus(requests []models.NodeLoadRequest, sy
 		var tag models.NodeTag
 		err := db.Where("tag_type = ? AND tag_id = ?", req.Type, req.ID).First(&tag).Error
 		if err == nil {
-			// 找到对应的系统，检查是否有统计数据
-			if systemWithStats, exists := systemStatsMap[tag.SystemID]; exists {
-				// 获取阈值配置
-				threshold, err := thresholdService.GetThreshold(tag.SystemID)
-				if err == nil {
-					// 使用现有的负载计算逻辑
-					response.LoadStatus = systemService.CalculateLoadStatus(systemWithStats, threshold)
+			// 找到对应的标签，检查系统是否存在
+			if systemInfo, exists := systemInfoMap[tag.SystemID]; exists {
+				// 检查服务器状态
+				if systemInfo.Status != "up" {
+					// 服务器离线，返回高负载
+					response.LoadStatus = "high"
+				} else if systemWithStats, hasStats := systemStatsMap[tag.SystemID]; hasStats {
+					// 服务器在线且有统计数据，计算负载状态
+					threshold, err := thresholdService.GetThreshold(tag.SystemID)
+					if err == nil {
+						// 使用现有的负载计算逻辑
+						response.LoadStatus = systemService.CalculateLoadStatus(systemWithStats, threshold)
+					} else {
+						// 没有阈值配置，默认为正常
+						response.LoadStatus = "normal"
+					}
 				} else {
-					// 没有阈值配置，默认为正常
-					response.LoadStatus = "normal"
+					// 服务器在线但没有统计数据
+					response.LoadStatus = "no_data"
 				}
 			}
 		}
