@@ -4,6 +4,8 @@ import (
 	"backend/internal/api/handlers"
 	"backend/internal/config"
 	"backend/internal/service"
+	"net/http"
+	"path/filepath"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -29,6 +31,9 @@ func SetupRouter(cfg *config.Config, systemService *service.SystemService) *gin.
 
 	// API路由组
 	setupAPIRoutes(r)
+
+	// 静态文件服务
+	setupStaticRoutes(r)
 
 	return r
 }
@@ -62,4 +67,26 @@ func setupAPIRoutes(r *gin.Engine) {
 		// 节点负载状态查询
 		api.POST("/nodes/load-status", handlers.GetNodeLoadStatus) // 批量查询节点负载状态
 	}
+}
+
+// setupStaticRoutes 设置静态文件路由
+func setupStaticRoutes(r *gin.Engine) {
+	// 静态文件目录
+	staticDir := "./static"
+	
+	// 提供静态文件服务
+	r.Static("/assets", filepath.Join(staticDir, "assets"))
+	r.StaticFile("/favicon.ico", filepath.Join(staticDir, "favicon.ico"))
+	
+	// SPA 路由处理 - 所有非API路由都返回index.html
+	r.NoRoute(func(c *gin.Context) {
+		// 如果是API请求，返回404
+		if len(c.Request.URL.Path) >= 4 && c.Request.URL.Path[:4] == "/api" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "API endpoint not found"})
+			return
+		}
+		
+		// 其他所有请求都返回index.html（用于SPA路由）
+		c.File(filepath.Join(staticDir, "index.html"))
+	})
 }
