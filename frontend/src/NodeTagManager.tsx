@@ -158,7 +158,7 @@ const NodeTagManager: React.FC<NodeTagManagerProps> = ({
           <div className="add-tag-input-group">
             <input
               type="text"
-              placeholder="标签类型 (如: server, proxy, cache...)"
+              placeholder="Type: (如: ss, v2ray, trojan...)"
               value={newTagType}
               onChange={(e) => setNewTagType(e.target.value)}
               onKeyPress={handleKeyPress}
