@@ -2,14 +2,14 @@ package config
 
 import (
 	"os"
-	"strconv"
 )
 
 // Config 应用配置
 type Config struct {
-	Server   ServerConfig   `json:"server"`
-	Database DatabaseConfig `json:"database"`
-	CORS     CORSConfig     `json:"cors"`
+	Server     ServerConfig     `json:"server"`
+	Database   DatabaseConfig   `json:"database"`
+	CORS       CORSConfig       `json:"cors"`
+	PocketBase PocketBaseConfig `json:"pocketbase"`
 }
 
 // ServerConfig 服务器配置
@@ -30,6 +30,13 @@ type CORSConfig struct {
 	AllowHeaders []string `json:"allow_headers"`
 }
 
+// PocketBaseConfig PocketBase配置
+type PocketBaseConfig struct {
+	BaseURL  string `json:"base_url"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 // Load 加载配置
 func Load() *Config {
 	return &Config{
@@ -41,12 +48,14 @@ func Load() *Config {
 			Path: getEnv("DATABASE_PATH", "server_monitor.db"),
 		},
 		CORS: CORSConfig{
-			AllowOrigins: []string{
-				getEnv("FRONTEND_URL_1", "http://localhost:3000"),
-				getEnv("FRONTEND_URL_2", "http://localhost:5173"),
-			},
+			AllowOrigins: []string{"*"},
 			AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-			AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
+			AllowHeaders: []string{"*"},
+		},
+		PocketBase: PocketBaseConfig{
+			BaseURL:  getEnv("POCKETBASE_URL", "https://bz.baidua.top"),
+			Email:    getEnv("POCKETBASE_EMAIL", "Spike.wook@gmail.com"),
+			Password: getEnv("POCKETBASE_PASSWORD", "adadmin/1213"),
 		},
 	}
 }
@@ -64,22 +73,3 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-// getEnvAsInt 获取环境变量作为整数
-func getEnvAsInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-	}
-	return defaultValue
-}
-
-// getEnvAsBool 获取环境变量作为布尔值
-func getEnvAsBool(key string, defaultValue bool) bool {
-	if value := os.Getenv(key); value != "" {
-		if boolValue, err := strconv.ParseBool(value); err == nil {
-			return boolValue
-		}
-	}
-	return defaultValue
-}

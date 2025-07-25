@@ -17,16 +17,13 @@ type SystemService struct {
 
 // NewSystemService 创建系统服务
 func NewSystemService(cfg *config.Config) *SystemService {
-	client := pocketbase.NewClient("https://bz.baidua.top")
+	client := pocketbase.NewClient(cfg.PocketBase.BaseURL)
 	
 	// 登录认证
-	email := "Spike.wook@gmail.com"
-	password := "adadmin/1213"
-	
-	if err := client.Login(email, password); err != nil {
+	if err := client.Login(cfg.PocketBase.Email, cfg.PocketBase.Password); err != nil {
 		log.Printf("PocketBase 登录失败: %v", err)
 	} else {
-		log.Println("PocketBase 登录成功")
+		log.Printf("PocketBase 登录成功，连接到: %s", cfg.PocketBase.BaseURL)
 	}
 	
 	return &SystemService{
