@@ -9,10 +9,12 @@ import (
 )
 
 var systemService *service.SystemService
+var thresholdHandler *ThresholdHandler
 
 // InitHandlers 初始化处理器
 func InitHandlers(svc *service.SystemService) {
 	systemService = svc
+	thresholdHandler = NewThresholdHandler()
 }
 
 // GetSystems 获取所有系统列表
@@ -61,13 +63,30 @@ func GetSystemStats(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"stats": stats, "total": len(stats)})
 }
 
-// GetSystemsWithAvgStats 获取所有系统及其平均统计数据
+// GetSystemsWithAvgStats 获取所有系统及其平均统计数据（包含负载状态）
 func GetSystemsWithAvgStats(c *gin.Context) {
-	systems, err := systemService.GetSystemsWithAvgStats()
+	systems, err := systemService.GetSystemsWithLoadStatus()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取系统统计数据失败", "details": err.Error()})
 		return
 	}
 	
 	c.JSON(http.StatusOK, gin.H{"systems": systems})
+}
+
+// 阈值配置相关的全局函数包装器
+func GetThreshold(c *gin.Context) {
+	thresholdHandler.GetThreshold(c)
+}
+
+func UpdateThreshold(c *gin.Context) {
+	thresholdHandler.UpdateThreshold(c)
+}
+
+func DeleteThreshold(c *gin.Context) {
+	thresholdHandler.DeleteThreshold(c)
+}
+
+func GetAllThresholds(c *gin.Context) {
+	thresholdHandler.GetAllThresholds(c)
 }

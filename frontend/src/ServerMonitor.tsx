@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ThresholdConfig from './ThresholdConfig';
 
 interface SystemStats {
   id: number;
@@ -11,6 +12,20 @@ interface SystemStats {
   avg_net_sent: number;
   avg_net_recv: number;
   last_update: string;
+  load_status: string; // 新增：负载状态 'normal' | 'high'
+}
+
+interface SystemThreshold {
+  id: number;
+  system_id: string;
+  cpu_alert_limit: number;
+  mem_alert_limit: number;
+  net_up_max: number;
+  net_down_max: number;
+  net_up_alert: number;
+  net_down_alert: number;
+  created_at: string;
+  updated_at: string;
 }
 
 interface SystemSummary {
@@ -26,6 +41,8 @@ const ServerMonitor: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [showThresholdConfig, setShowThresholdConfig] = useState(false);
+  const [selectedSystem, setSelectedSystem] = useState<SystemStats | null>(null);
 
   const API_BASE = 'http://localhost:8080/api';
 
@@ -75,6 +92,22 @@ const ServerMonitor: React.FC = () => {
     switch (status) {
       case 'up': return '在线';
       case 'down': return '离线';
+      default: return '未知';
+    }
+  };
+
+  const getLoadStatusClass = (loadStatus: string) => {
+    switch (loadStatus) {
+      case 'high': return 'load-status-high';
+      case 'normal': return 'load-status-normal';
+      default: return 'load-status-normal';
+    }
+  };
+
+  const getLoadStatusText = (loadStatus: string) => {
+    switch (loadStatus) {
+      case 'high': return '高负载';
+      case 'normal': return '正常';
       default: return '未知';
     }
   };
@@ -143,10 +176,12 @@ const ServerMonitor: React.FC = () => {
                 <tr>
                   <th>服务器</th>
                   <th>状态</th>
+                  <th>负载状态</th>
                   <th>CPU (%)</th>
                   <th>内存 (%)</th>
                   <th>网络I/O (Mbps)</th>
                   <th>最后更新</th>
+                  <th>操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -161,6 +196,11 @@ const ServerMonitor: React.FC = () => {
                     <td>
                       <span className={getStatusClass(system.status)}>
                         {getStatusText(system.status)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={getLoadStatusClass(system.load_status)}>
+                        {getLoadStatusText(system.load_status)}
                       </span>
                     </td>
                     <td>
@@ -194,6 +234,17 @@ const ServerMonitor: React.FC = () => {
                     <td>
                       {system.last_update ? formatDateTime(system.last_update) : '无数据'}
                     </td>
+                    <td>
+                      <button 
+                        className="config-button"
+                        onClick={() => {
+                          setSelectedSystem(system);
+                          setShowThresholdConfig(true);
+                        }}
+                      >
+                        配置阈值
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -206,6 +257,21 @@ const ServerMonitor: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* 阈值配置模态框 */}
+        {showThresholdConfig && selectedSystem && (
+          <ThresholdConfig
+            system={selectedSystem}
+            onClose={() => {
+              setShowThresholdConfig(false);
+              setSelectedSystem(null);
+            }}
+            onSave={() => {
+              // 保存后刷新数据
+              fetchData();
+            }}
+          />
+        )}
       </div>
     </div>
   );

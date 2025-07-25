@@ -2,6 +2,7 @@ package main
 
 import (
 	"backend/internal/config"
+	"backend/internal/database"
 	"backend/internal/server"
 	"log"
 )
@@ -10,6 +11,12 @@ func main() {
 	// 加载配置
 	cfg := config.Load()
 	log.Println("Configuration loaded successfully")
+
+	// 初始化数据库
+	if err := database.Init(cfg.Database.Path); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+	log.Println("Database initialized successfully")
 
 	// 创建服务器实例
 	srv := server.New(cfg)

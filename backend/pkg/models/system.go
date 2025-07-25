@@ -55,3 +55,23 @@ type AverageStats struct {
 	AvgNetRecv float64   `json:"avg_net_recv"`
 	LastUpdate time.Time `json:"last_update"`
 }
+
+// SystemThreshold 系统阈值配置（本地SQLite存储）
+type SystemThreshold struct {
+	ID              uint    `gorm:"primaryKey" json:"id"`
+	SystemID        string  `gorm:"uniqueIndex;not null" json:"system_id"`
+	CPUAlertLimit   float64 `gorm:"default:90.0" json:"cpu_alert_limit"`   // CPU告警阈值（%）
+	MemAlertLimit   float64 `gorm:"default:90.0" json:"mem_alert_limit"`   // 内存告警阈值（%）
+	NetUpMax        float64 `gorm:"default:0" json:"net_up_max"`           // 上行最大Mbps（历史极限值）
+	NetDownMax      float64 `gorm:"default:0" json:"net_down_max"`         // 下行最大Mbps（历史极限值）
+	NetUpAlert      float64 `gorm:"default:80.0" json:"net_up_alert"`      // 上行告警阈值（百分比）
+	NetDownAlert    float64 `gorm:"default:80.0" json:"net_down_alert"`    // 下行告警阈值（百分比）
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+// SystemWithLoadStatus 带负载状态的系统统计
+type SystemWithLoadStatus struct {
+	SystemWithAvgStats
+	LoadStatus string `json:"load_status"` // normal, high
+}

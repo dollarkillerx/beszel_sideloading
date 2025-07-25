@@ -44,6 +44,14 @@ func setupAPIRoutes(r *gin.Engine) {
 			systems.GET("/summary", handlers.GetSystemSummary)
 			systems.GET("/stats", handlers.GetSystemsWithAvgStats)
 			systems.GET("/:id/stats", handlers.GetSystemStats)
+			
+			// 阈值配置路由
+			systems.GET("/:id/threshold", handlers.GetThreshold)
+			systems.PUT("/:id/threshold", handlers.UpdateThreshold)
+			systems.DELETE("/:id/threshold", handlers.DeleteThreshold)
 		}
+		
+		// 全局阈值配置路由
+		api.GET("/thresholds", handlers.GetAllThresholds)
 	}
 }

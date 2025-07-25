@@ -32,3 +32,4 @@ go.work.sum
 .vscode/
 backend/server
 backend/server_monitor.db
+CLAUDE.md

@@ -11,8 +11,9 @@ import (
 
 // SystemService 系统服务
 type SystemService struct {
-	pbClient *pocketbase.Client
-	config   *config.Config
+	pbClient         *pocketbase.Client
+	config           *config.Config
+	thresholdService *ThresholdService
 }
 
 // NewSystemService 创建系统服务
@@ -27,8 +28,9 @@ func NewSystemService(cfg *config.Config) *SystemService {
 	}
 	
 	return &SystemService{
-		pbClient: client,
-		config:   cfg,
+		pbClient:         client,
+		config:           cfg,
+		thresholdService: NewThresholdService(),
 	}
 }
 
@@ -124,6 +126,92 @@ func (s *SystemService) GetSystemsWithAvgStats() ([]*models.SystemWithAvgStats, 
 	}
 	
 	return result, nil
+}
+
+// GetSystemsWithLoadStatus 获取带负载状态的系统列表
+func (s *SystemService) GetSystemsWithLoadStatus() ([]*models.SystemWithLoadStatus, error) {
+	systems, err := s.GetSystemsWithAvgStats()
+	if err != nil {
+		return nil, err
+	}
+	
+	var result []*models.SystemWithLoadStatus
+	
+	for _, system := range systems {
+		// 获取阈值配置
+		threshold, err := s.thresholdService.GetThreshold(system.ID)
+		if err != nil {
+			log.Printf("获取系统 %s 阈值配置失败: %v", system.Name, err)
+			// 使用默认配置继续处理
+			threshold = &models.SystemThreshold{
+				SystemID:        system.ID,
+				CPUAlertLimit:   90.0,
+				MemAlertLimit:   90.0,
+				NetUpMax:        0,
+				NetDownMax:      0,
+				NetUpAlert:      80.0,
+				NetDownAlert:    80.0,
+			}
+		}
+		
+		// 计算负载状态
+		loadStatus := s.calculateLoadStatus(system, threshold)
+		
+		// 更新网络最大值（动态更新历史极限值）
+		netUpMbps := system.AvgNetSent * 8  // 转换为 Mbps
+		netDownMbps := system.AvgNetRecv * 8 // 转换为 Mbps
+		if err := s.thresholdService.UpdateNetworkMax(system.ID, netUpMbps, netDownMbps); err != nil {
+			log.Printf("更新系统 %s 网络最大值失败: %v", system.Name, err)
+		}
+		
+		systemWithLoadStatus := &models.SystemWithLoadStatus{
+			SystemWithAvgStats: *system,
+			LoadStatus:         loadStatus,
+		}
+		
+		result = append(result, systemWithLoadStatus)
+	}
+	
+	return result, nil
+}
+
+// calculateLoadStatus 计算负载状态
+func (s *SystemService) calculateLoadStatus(system *models.SystemWithAvgStats, threshold *models.SystemThreshold) string {
+	// 检查CPU使用率
+	if system.AvgCPU >= threshold.CPUAlertLimit {
+		log.Printf("系统 %s CPU负载过高: %.2f%% >= %.2f%%", system.Name, system.AvgCPU, threshold.CPUAlertLimit)
+		return "high"
+	}
+	
+	// 检查内存使用率
+	if system.AvgMemPct >= threshold.MemAlertLimit {
+		log.Printf("系统 %s 内存负载过高: %.2f%% >= %.2f%%", system.Name, system.AvgMemPct, threshold.MemAlertLimit)
+		return "high"
+	}
+	
+	// 检查网络上行 - 只有当设置了最大值且大于0时才检查
+	if threshold.NetUpMax > 0 {
+		netUpMbps := system.AvgNetSent * 8 // 转换为 Mbps
+		upThreshold := threshold.NetUpMax * (threshold.NetUpAlert / 100)
+		if netUpMbps >= upThreshold {
+			log.Printf("系统 %s 上行网络负载过高: %.2f Mbps >= %.2f Mbps (%.1f%% of %.2f Mbps)", 
+				system.Name, netUpMbps, upThreshold, threshold.NetUpAlert, threshold.NetUpMax)
+			return "high"
+		}
+	}
+	
+	// 检查网络下行 - 只有当设置了最大值且大于0时才检查
+	if threshold.NetDownMax > 0 {
+		netDownMbps := system.AvgNetRecv * 8 // 转换为 Mbps
+		downThreshold := threshold.NetDownMax * (threshold.NetDownAlert / 100)
+		if netDownMbps >= downThreshold {
+			log.Printf("系统 %s 下行网络负载过高: %.2f Mbps >= %.2f Mbps (%.1f%% of %.2f Mbps)", 
+				system.Name, netDownMbps, downThreshold, threshold.NetDownAlert, threshold.NetDownMax)
+			return "high"
+		}
+	}
+	
+	return "normal"
 }
 
 // GetSystemStats 获取指定系统的统计数据
