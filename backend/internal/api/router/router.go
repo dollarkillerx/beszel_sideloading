@@ -53,5 +53,13 @@ func setupAPIRoutes(r *gin.Engine) {
 		
 		// 全局阈值配置路由
 		api.GET("/thresholds", handlers.GetAllThresholds)
+		
+		// 服务器标签路由
+		systems.POST("/:id/tags", handlers.AddSystemTag)        // 添加服务器标签
+		systems.DELETE("/:id/tags", handlers.RemoveSystemTag)   // 删除服务器标签
+		systems.GET("/:id/tags", handlers.GetSystemTags)        // 获取服务器标签
+		
+		// 节点负载状态查询
+		api.POST("/nodes/load-status", handlers.GetNodeLoadStatus) // 批量查询节点负载状态
 	}
 }

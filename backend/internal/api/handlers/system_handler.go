@@ -10,11 +10,30 @@ import (
 
 var systemService *service.SystemService
 var thresholdHandler *ThresholdHandler
+var nodeTagHandler *NodeTagHandler
 
 // InitHandlers 初始化处理器
 func InitHandlers(svc *service.SystemService) {
 	systemService = svc
 	thresholdHandler = NewThresholdHandler()
+	nodeTagHandler = NewNodeTagHandler()
+}
+
+// 标签相关的全局处理函数
+func AddSystemTag(c *gin.Context) {
+	nodeTagHandler.AddSystemTag(c)
+}
+
+func RemoveSystemTag(c *gin.Context) {
+	nodeTagHandler.RemoveSystemTag(c)
+}
+
+func GetSystemTags(c *gin.Context) {
+	nodeTagHandler.GetSystemTags(c)
+}
+
+func GetNodeLoadStatus(c *gin.Context) {
+	nodeTagHandler.GetNodeLoadStatus(c)
 }
 
 // GetSystems 获取所有系统列表
@@ -90,3 +109,4 @@ func DeleteThreshold(c *gin.Context) {
 func GetAllThresholds(c *gin.Context) {
 	thresholdHandler.GetAllThresholds(c)
 }
+

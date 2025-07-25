@@ -75,3 +75,38 @@ type SystemWithLoadStatus struct {
 	SystemWithAvgStats
 	LoadStatus string `json:"load_status"` // normal, high
 }
+
+// NodeTag 服务器标签（本地SQLite存储）
+type NodeTag struct {
+	ID       uint   `gorm:"primaryKey" json:"id"`
+	SystemID string `gorm:"not null" json:"system_id"`        // 服务器ID
+	TagType  string `gorm:"not null" json:"tag_type"`         // 标签类型
+	TagID    int    `gorm:"not null" json:"tag_id"`           // 标签ID
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// NodeTagRequest 创建/删除标签的请求结构
+type NodeTagRequest struct {
+	Type string `json:"type" binding:"required"` // 标签类型
+	ID   int    `json:"id" binding:"required"`   // 标签ID
+}
+
+// NodeTagsResponse 节点标签响应
+type NodeTagsResponse struct {
+	Success string    `json:"success"`
+	Tags    []NodeTag `json:"tags,omitempty"`
+}
+
+// NodeLoadRequest 节点负载查询请求
+type NodeLoadRequest struct {
+	Type string `json:"type" binding:"required"` // 标签类型
+	ID   int    `json:"id" binding:"required"`   // 标签ID
+}
+
+// NodeLoadResponse 节点负载查询响应
+type NodeLoadResponse struct {
+	Type       string `json:"type"`        // 标签类型
+	ID         int    `json:"id"`          // 标签ID
+	LoadStatus string `json:"load_status"` // 负载状态: normal, high, not_found
+}

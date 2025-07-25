@@ -155,7 +155,7 @@ func (s *SystemService) GetSystemsWithLoadStatus() ([]*models.SystemWithLoadStat
 		}
 		
 		// 计算负载状态
-		loadStatus := s.calculateLoadStatus(system, threshold)
+		loadStatus := s.CalculateLoadStatus(system, threshold)
 		
 		// 更新网络最大值（动态更新历史极限值）
 		netUpMbps := system.AvgNetSent * 8  // 转换为 Mbps
@@ -175,8 +175,8 @@ func (s *SystemService) GetSystemsWithLoadStatus() ([]*models.SystemWithLoadStat
 	return result, nil
 }
 
-// calculateLoadStatus 计算负载状态
-func (s *SystemService) calculateLoadStatus(system *models.SystemWithAvgStats, threshold *models.SystemThreshold) string {
+// CalculateLoadStatus 计算负载状态
+func (s *SystemService) CalculateLoadStatus(system *models.SystemWithAvgStats, threshold *models.SystemThreshold) string {
 	// 检查CPU使用率
 	if system.AvgCPU >= threshold.CPUAlertLimit {
 		log.Printf("系统 %s CPU负载过高: %.2f%% >= %.2f%%", system.Name, system.AvgCPU, threshold.CPUAlertLimit)
