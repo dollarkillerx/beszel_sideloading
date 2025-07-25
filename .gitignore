@@ -28,5 +28,7 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
+backend/server
+backend/server_monitor.db

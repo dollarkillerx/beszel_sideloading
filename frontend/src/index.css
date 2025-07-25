@@ -1,0 +1,272 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8fafc;
+  color: #374151;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+/* 加载和错误状态 */
+.loading-container,
+.error-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: 1.25rem;
+}
+
+.error-container {
+  color: #dc2626;
+}
+
+/* 主容器 */
+.dashboard-container {
+  padding: 2rem;
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+.dashboard-content {
+  max-width: 90rem;
+  margin: 0 auto;
+}
+
+/* 头部 */
+.dashboard-header {
+  margin-bottom: 2rem;
+}
+
+.dashboard-title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.dashboard-subtitle {
+  color: #6b7280;
+  margin: 0;
+}
+
+/* 摘要卡片 */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.summary-card h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.5rem 0;
+}
+
+.summary-card p {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.summary-card .total { color: #2563eb; }
+.summary-card .online { color: #059669; }
+.summary-card .offline { color: #dc2626; }
+.summary-card .unknown { color: #d97706; }
+
+/* 服务器表格 */
+.servers-table-container {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.table-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.servers-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.servers-table th {
+  background-color: #f9fafb;
+  padding: 0.75rem 1.5rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.servers-table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.875rem;
+}
+
+.servers-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+/* 服务器信息 */
+.server-info .server-name {
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.server-info .server-address {
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+/* 状态标签 */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+}
+
+.status-up {
+  color: #059669;
+  background-color: #d1fae5;
+}
+
+.status-down {
+  color: #dc2626;
+  background-color: #fee2e2;
+}
+
+.status-unknown {
+  color: #d97706;
+  background-color: #fef3c7;
+}
+
+/* 进度条 */
+.progress-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progress-bar {
+  width: 4rem;
+  height: 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.progress-cpu {
+  background-color: #3b82f6;
+}
+
+.progress-memory {
+  background-color: #10b981;
+}
+
+.progress-text {
+  font-size: 0.875rem;
+  color: #374151;
+  min-width: 3rem;
+}
+
+/* 网络指标 */
+.network-metrics {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.network-metrics div {
+  margin-bottom: 0.25rem;
+}
+
+.network-metrics div:last-child {
+  margin-bottom: 0;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 1rem;
+  }
+  
+  .dashboard-title {
+    font-size: 1.5rem;
+  }
+  
+  .summary-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .summary-card {
+    padding: 1rem;
+  }
+  
+  .table-header {
+    padding: 1rem;
+  }
+  
+  .servers-table th,
+  .servers-table td {
+    padding: 0.75rem 1rem;
+  }
+}

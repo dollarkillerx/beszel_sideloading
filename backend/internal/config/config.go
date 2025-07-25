@@ -1,0 +1,85 @@
+package config
+
+import (
+	"os"
+	"strconv"
+)
+
+// Config 应用配置
+type Config struct {
+	Server   ServerConfig   `json:"server"`
+	Database DatabaseConfig `json:"database"`
+	CORS     CORSConfig     `json:"cors"`
+}
+
+// ServerConfig 服务器配置
+type ServerConfig struct {
+	Host string `json:"host"`
+	Port string `json:"port"`
+}
+
+// DatabaseConfig 数据库配置
+type DatabaseConfig struct {
+	Path string `json:"path"`
+}
+
+// CORSConfig 跨域配置
+type CORSConfig struct {
+	AllowOrigins []string `json:"allow_origins"`
+	AllowMethods []string `json:"allow_methods"`
+	AllowHeaders []string `json:"allow_headers"`
+}
+
+// Load 加载配置
+func Load() *Config {
+	return &Config{
+		Server: ServerConfig{
+			Host: getEnv("SERVER_HOST", ""),
+			Port: getEnv("SERVER_PORT", "8080"),
+		},
+		Database: DatabaseConfig{
+			Path: getEnv("DATABASE_PATH", "server_monitor.db"),
+		},
+		CORS: CORSConfig{
+			AllowOrigins: []string{
+				getEnv("FRONTEND_URL_1", "http://localhost:3000"),
+				getEnv("FRONTEND_URL_2", "http://localhost:5173"),
+			},
+			AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		},
+	}
+}
+
+// GetAddress 获取服务器地址
+func (c *Config) GetAddress() string {
+	return c.Server.Host + ":" + c.Server.Port
+}
+
+// getEnv 获取环境变量，如果不存在则返回默认值
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+// getEnvAsInt 获取环境变量作为整数
+func getEnvAsInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
+	}
+	return defaultValue
+}
+
+// getEnvAsBool 获取环境变量作为布尔值
+func getEnvAsBool(key string, defaultValue bool) bool {
+	if value := os.Getenv(key); value != "" {
+		if boolValue, err := strconv.ParseBool(value); err == nil {
+			return boolValue
+		}
+	}
+	return defaultValue
+}
