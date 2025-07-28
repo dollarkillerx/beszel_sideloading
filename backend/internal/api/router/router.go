@@ -4,7 +4,6 @@ import (
 	"backend/internal/api/handlers"
 	"backend/internal/config"
 	"backend/internal/service"
-	"net/http"
 	"path/filepath"
 
 	"github.com/gin-contrib/cors"
@@ -29,11 +28,11 @@ func SetupRouter(cfg *config.Config, systemService *service.SystemService) *gin.
 		c.JSON(200, gin.H{"status": "ok", "message": "Server is running"})
 	})
 
+	// 静态文件服务 - 必须在API路由之前
+	setupStaticRoutes(r)
+
 	// API路由组
 	setupAPIRoutes(r)
-
-	// 静态文件服务
-	setupStaticRoutes(r)
 
 	return r
 }
@@ -74,33 +73,28 @@ func setupStaticRoutes(r *gin.Engine) {
 	// 静态文件目录
 	staticDir := "./static"
 	
-	// 提供静态资源的直接访问（包括所有静态文件）
-	r.Static("/static", staticDir)
-	r.StaticFile("/favicon.ico", filepath.Join(staticDir, "favicon.ico"))
+	// 为所有具体的静态文件类型提供服务
+	r.GET("/*.css", func(c *gin.Context) {
+		c.File(filepath.Join(staticDir, filepath.Base(c.Request.URL.Path)))
+	})
+	r.GET("/*.js", func(c *gin.Context) {
+		c.File(filepath.Join(staticDir, filepath.Base(c.Request.URL.Path)))
+	})
+	r.GET("/*.js.map", func(c *gin.Context) {
+		c.File(filepath.Join(staticDir, filepath.Base(c.Request.URL.Path)))
+	})
+	r.GET("/*.svg", func(c *gin.Context) {
+		c.File(filepath.Join(staticDir, filepath.Base(c.Request.URL.Path)))
+	})
+	r.GET("/*.png", func(c *gin.Context) {
+		c.File(filepath.Join(staticDir, filepath.Base(c.Request.URL.Path)))
+	})
+	r.GET("/*.ico", func(c *gin.Context) {
+		c.File(filepath.Join(staticDir, filepath.Base(c.Request.URL.Path)))
+	})
 	
-	// SPA 路由处理 - 所有非API和非静态文件请求都返回index.html
-	r.NoRoute(func(c *gin.Context) {
-		path := c.Request.URL.Path
-		
-		// 如果是API请求，返回404
-		if len(path) >= 4 && path[:4] == "/api" {
-			c.JSON(http.StatusNotFound, gin.H{"error": "API endpoint not found"})
-			return
-		}
-		
-		// 如果是静态文件请求，跳过处理（让Static中间件处理）
-		if len(path) >= 7 && path[:7] == "/static" {
-			return
-		}
-		
-		// 检查是否为直接的静态文件请求（在根目录下）
-		ext := filepath.Ext(path)
-		if ext == ".css" || ext == ".js" || ext == ".svg" || ext == ".png" || ext == ".ico" || ext == ".map" {
-			c.File(filepath.Join(staticDir, filepath.Base(path)))
-			return
-		}
-		
-		// 其他所有请求都返回index.html（用于SPA路由）
+	// 根路径返回index.html
+	r.GET("/", func(c *gin.Context) {
 		c.File(filepath.Join(staticDir, "index.html"))
 	})
 }
