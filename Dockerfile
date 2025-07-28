@@ -9,15 +9,17 @@ COPY frontend/package.json frontend/bun.lockb* ./
 COPY frontend/ ./
 
 # 安装bun并构建前端
-RUN npm install -g bun
+# 使用 curl 直接安装 bun（支持多架构）
+RUN apk add --no-cache curl bash && \
+    curl -fsSL https://bun.sh/install | bash && \
+    mv /root/.bun/bin/bun /usr/local/bin/
+
+# 安装依赖并构建
 RUN bun install
 RUN bun run build
 
 # Go 后端构建阶段
 FROM golang:1.21-alpine AS backend-builder
-
-# 安装必要的工具
-RUN apk add --no-cache git
 
 # 设置工作目录
 WORKDIR /app/backend
@@ -32,17 +34,10 @@ RUN go mod download
 COPY backend/ ./
 
 # 构建Go应用
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o main cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main cmd/main.go
 
 # 最终运行阶段
 FROM alpine:latest
-
-# 安装必要的运行时依赖
-RUN apk --no-cache add ca-certificates sqlite
-
-# 创建非root用户
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -S appuser -u 1001 -G appgroup
 
 # 设置工作目录
 WORKDIR /app
@@ -55,15 +50,8 @@ COPY --from=frontend-builder /app/frontend/dist ./static
 RUN mkdir -p /app/data && \
     chown -R appuser:appgroup /app
 
-# 切换到非root用户
-USER appuser
-
 # 暴露端口
 EXPOSE 8080
-
-# 设置环境变量
-ENV GIN_MODE=release
-ENV DB_PATH=/app/data/server_monitor.db
 
 # 启动命令
 CMD ["./main"]
