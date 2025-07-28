@@ -45,7 +45,7 @@ func Load() *Config {
 			Port: getEnv("SERVER_PORT", "8080"),
 		},
 		Database: DatabaseConfig{
-			Path: getEnv("DATABASE_PATH", "server_monitor.db"),
+			Path: getEnv("DATABASE_PATH", "badger_data"),
 		},
 		CORS: CORSConfig{
 			AllowOrigins: []string{"*"},

@@ -17,15 +17,18 @@ func NewNodeTagService() *NodeTagService {
 
 // AddTag 添加服务器标签
 func (s *NodeTagService) AddTag(systemID string, request *models.NodeTagRequest) error {
-	db := database.GetDB()
+	storage := database.GetStorage()
 	
 	// 检查是否已存在相同的标签
-	var existingTag models.NodeTag
-	result := db.Where("system_id = ? AND tag_type = ? AND tag_id = ?", 
-		systemID, request.Type, request.ID).First(&existingTag)
+	tags, err := storage.GetNodeTags(systemID)
+	if err != nil {
+		return fmt.Errorf("检查标签失败: %w", err)
+	}
 	
-	if result.Error == nil {
-		return fmt.Errorf("标签已存在")
+	for _, tag := range tags {
+		if tag.TagType == request.Type && tag.TagID == request.ID {
+			return fmt.Errorf("标签已存在")
+		}
 	}
 	
 	// 创建新标签
@@ -35,7 +38,7 @@ func (s *NodeTagService) AddTag(systemID string, request *models.NodeTagRequest)
 		TagID:    request.ID,
 	}
 	
-	if err := db.Create(&newTag).Error; err != nil {
+	if err := storage.CreateNodeTag(&newTag); err != nil {
 		return fmt.Errorf("创建标签失败: %w", err)
 	}
 	
@@ -44,30 +47,21 @@ func (s *NodeTagService) AddTag(systemID string, request *models.NodeTagRequest)
 
 // RemoveTag 删除服务器标签
 func (s *NodeTagService) RemoveTag(systemID string, request *models.NodeTagRequest) error {
-	db := database.GetDB()
+	storage := database.GetStorage()
 	
 	// 删除特定标签
-	result := db.Where("system_id = ? AND tag_type = ? AND tag_id = ?", 
-		systemID, request.Type, request.ID).Delete(&models.NodeTag{})
-	
-	if result.Error != nil {
-		return fmt.Errorf("删除标签失败: %w", result.Error)
-	}
-	
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("标签不存在")
+	if err := storage.DeleteNodeTag(systemID, request.Type, request.ID); err != nil {
+		return fmt.Errorf("删除标签失败: %w", err)
 	}
 	
 	return nil
 }
 
 // GetSystemTags 获取服务器的所有标签
-func (s *NodeTagService) GetSystemTags(systemID string) ([]models.NodeTag, error) {
-	db := database.GetDB()
-	var tags []models.NodeTag
+func (s *NodeTagService) GetSystemTags(systemID string) ([]*models.NodeTag, error) {
+	storage := database.GetStorage()
 	
-	err := db.Where("system_id = ?", systemID).Find(&tags).Error
-	
+	tags, err := storage.GetNodeTags(systemID)
 	if err != nil {
 		return nil, fmt.Errorf("获取服务器标签失败: %w", err)
 	}
@@ -77,7 +71,7 @@ func (s *NodeTagService) GetSystemTags(systemID string) ([]models.NodeTag, error
 
 // GetNodeLoadStatus 获取节点负载状态
 func (s *NodeTagService) GetNodeLoadStatus(requests []models.NodeLoadRequest, systemService *SystemService, thresholdService *ThresholdService) ([]models.NodeLoadResponse, error) {
-	db := database.GetDB()
+	storage := database.GetStorage()
 	var responses []models.NodeLoadResponse
 	
 	// 获取所有系统基本信息（包含状态）
@@ -112,10 +106,10 @@ func (s *NodeTagService) GetNodeLoadStatus(requests []models.NodeLoadRequest, sy
 		}
 		
 		// 查找对应的系统ID
-		var tag models.NodeTag
-		err := db.Where("tag_type = ? AND tag_id = ?", req.Type, req.ID).First(&tag).Error
-		if err == nil {
+		tags, err := storage.GetNodeTagsByTypeAndID(req.Type, req.ID)
+		if err == nil && len(tags) > 0 {
 			// 找到对应的标签，检查系统是否存在
+			tag := tags[0] // 取第一个匹配的标签
 			if systemInfo, exists := systemInfoMap[tag.SystemID]; exists {
 				// 检查服务器状态
 				if systemInfo.Status != "up" {

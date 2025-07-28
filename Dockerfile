@@ -21,9 +21,6 @@ RUN bun run build
 # Go 后端构建阶段
 FROM golang:1.21 AS backend-builder
 
-# 安装构建 SQLite 所需的 C 编译器和头文件
-RUN apt-get update && apt-get install -y gcc libc6-dev
-
 # 设置工作目录
 WORKDIR /app/backend
 
@@ -36,11 +33,11 @@ RUN go mod download
 # 复制后端源码
 COPY backend/ ./
 
-# 构建Go应用
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o main cmd/main.go
+# 构建Go应用 - 不再需要CGO
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main cmd/main.go
 
-# 最终运行阶段
-FROM debian:bookworm-slim
+# 最终运行阶段 - 使用alpine更小的镜像
+FROM alpine:latest
 
 # 设置工作目录
 WORKDIR /app

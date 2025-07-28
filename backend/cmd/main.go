@@ -16,6 +16,7 @@ func main() {
 	if err := database.Init(cfg.Database.Path); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
+	defer database.Close() // 确保程序退出时关闭数据库
 	log.Println("Database initialized successfully")
 
 	// 创建服务器实例

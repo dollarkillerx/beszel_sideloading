@@ -83,9 +83,15 @@ func (h *NodeTagHandler) GetSystemTags(c *gin.Context) {
 		return
 	}
 
+	// 转换 []*models.NodeTag 为 []models.NodeTag
+	tagValues := make([]models.NodeTag, len(tags))
+	for i, tag := range tags {
+		tagValues[i] = *tag
+	}
+
 	c.JSON(http.StatusOK, models.NodeTagsResponse{
 		Success: "ok",
-		Tags:    tags,
+		Tags:    tagValues,
 	})
 }
 

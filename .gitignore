@@ -33,3 +33,4 @@ go.work.sum
 backend/server
 backend/server_monitor.db
 CLAUDE.md
+backend/badger_data/
