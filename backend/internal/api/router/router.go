@@ -28,11 +28,11 @@ func SetupRouter(cfg *config.Config, systemService *service.SystemService) *gin.
 		c.JSON(200, gin.H{"status": "ok", "message": "Server is running"})
 	})
 
-	// 静态文件服务 - 必须在API路由之前
-	setupStaticRoutes(r)
-
 	// API路由组
 	setupAPIRoutes(r)
+
+	// 静态文件服务 - 使用NoRoute来处理所有未匹配的路由
+	setupStaticRoutes(r)
 
 	return r
 }
@@ -73,28 +73,36 @@ func setupStaticRoutes(r *gin.Engine) {
 	// 静态文件目录
 	staticDir := "./static"
 	
-	// 为所有具体的静态文件类型提供服务
-	r.GET("/*.css", func(c *gin.Context) {
-		c.File(filepath.Join(staticDir, filepath.Base(c.Request.URL.Path)))
-	})
-	r.GET("/*.js", func(c *gin.Context) {
-		c.File(filepath.Join(staticDir, filepath.Base(c.Request.URL.Path)))
-	})
-	r.GET("/*.js.map", func(c *gin.Context) {
-		c.File(filepath.Join(staticDir, filepath.Base(c.Request.URL.Path)))
-	})
-	r.GET("/*.svg", func(c *gin.Context) {
-		c.File(filepath.Join(staticDir, filepath.Base(c.Request.URL.Path)))
-	})
-	r.GET("/*.png", func(c *gin.Context) {
-		c.File(filepath.Join(staticDir, filepath.Base(c.Request.URL.Path)))
-	})
-	r.GET("/*.ico", func(c *gin.Context) {
-		c.File(filepath.Join(staticDir, filepath.Base(c.Request.URL.Path)))
-	})
-	
 	// 根路径返回index.html
 	r.GET("/", func(c *gin.Context) {
+		c.File(filepath.Join(staticDir, "index.html"))
+	})
+	
+	// 使用NoRoute处理所有未匹配的路由
+	r.NoRoute(func(c *gin.Context) {
+		path := c.Request.URL.Path
+		
+		// 如果是API请求，返回404
+		if len(path) >= 4 && path[:4] == "/api" {
+			c.JSON(404, gin.H{"error": "API endpoint not found"})
+			return
+		}
+		
+		// 如果是健康检查，跳过（已经被处理了）
+		if path == "/health" {
+			return
+		}
+		
+		// 检查是否为静态文件请求
+		ext := filepath.Ext(path)
+		if ext == ".css" || ext == ".js" || ext == ".svg" || ext == ".png" || ext == ".ico" || ext == ".map" {
+			// 尝试提供静态文件
+			filename := filepath.Base(path)
+			c.File(filepath.Join(staticDir, filename))
+			return
+		}
+		
+		// 其他所有请求都返回index.html（用于SPA路由）
 		c.File(filepath.Join(staticDir, "index.html"))
 	})
 }
