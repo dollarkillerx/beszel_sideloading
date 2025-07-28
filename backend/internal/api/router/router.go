@@ -74,15 +74,29 @@ func setupStaticRoutes(r *gin.Engine) {
 	// 静态文件目录
 	staticDir := "./static"
 	
-	// 提供静态文件服务
-	r.Static("/assets", filepath.Join(staticDir, "assets"))
+	// 提供静态资源的直接访问（包括所有静态文件）
+	r.Static("/static", staticDir)
 	r.StaticFile("/favicon.ico", filepath.Join(staticDir, "favicon.ico"))
 	
-	// SPA 路由处理 - 所有非API路由都返回index.html
+	// SPA 路由处理 - 所有非API和非静态文件请求都返回index.html
 	r.NoRoute(func(c *gin.Context) {
+		path := c.Request.URL.Path
+		
 		// 如果是API请求，返回404
-		if len(c.Request.URL.Path) >= 4 && c.Request.URL.Path[:4] == "/api" {
+		if len(path) >= 4 && path[:4] == "/api" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "API endpoint not found"})
+			return
+		}
+		
+		// 如果是静态文件请求，跳过处理（让Static中间件处理）
+		if len(path) >= 7 && path[:7] == "/static" {
+			return
+		}
+		
+		// 检查是否为直接的静态文件请求（在根目录下）
+		ext := filepath.Ext(path)
+		if ext == ".css" || ext == ".js" || ext == ".svg" || ext == ".png" || ext == ".ico" || ext == ".map" {
+			c.File(filepath.Join(staticDir, filepath.Base(path)))
 			return
 		}
 		
