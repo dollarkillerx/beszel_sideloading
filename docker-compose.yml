@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   beszel-monitor:
-    build: .
+    image: beszel-monitor
     container_name: beszel-monitor
     ports:
       - "8080:8080"
