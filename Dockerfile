@@ -19,7 +19,7 @@ RUN bun install
 RUN bun run build
 
 # Go 后端构建阶段
-FROM golang:1.21 AS backend-builder
+FROM golang:1.23.0 AS backend-builder
 
 # 设置工作目录
 WORKDIR /app/backend
