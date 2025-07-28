@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ThresholdConfig from './ThresholdConfig';
+import { API_BASE } from './utils/api';
 
 interface SystemStats {
   id: number;
@@ -44,7 +45,7 @@ const ServerMonitor: React.FC = () => {
   const [showThresholdConfig, setShowThresholdConfig] = useState(false);
   const [selectedSystem, setSelectedSystem] = useState<SystemStats | null>(null);
 
-  const API_BASE = 'http://localhost:8080/api';
+  // API_BASE is now imported from utils/api.ts
 
   const fetchData = async () => {
     try {

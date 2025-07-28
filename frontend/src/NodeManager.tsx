@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import NodeTagManager from './NodeTagManager';
+import { API_BASE } from './utils/api';
 
 interface System {
   id: string;
@@ -27,7 +28,7 @@ const NodeManager: React.FC = () => {
   const [systemTags, setSystemTags] = useState<Record<string, NodeTag[]>>({});
   const [loading, setLoading] = useState(true);
 
-  const API_BASE = 'http://localhost:8080/api';
+  // API_BASE is now imported from utils/api.ts
 
   useEffect(() => {
     fetchSystems();

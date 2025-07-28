@@ -8,13 +8,12 @@ services:
       - "8080:8080"
     volumes:
       - ./data:/app/data
-      - ./config:/app/config
     environment:
       - GIN_MODE=release
       - DB_PATH=/app/data/server_monitor.db
-      - POCKETBASE_BASE_URL=${POCKETBASE_BASE_URL:-https://bz.baidua.top}
-      - POCKETBASE_EMAIL=${POCKETBASE_EMAIL}
-      - POCKETBASE_PASSWORD=${POCKETBASE_PASSWORD}
+      # - POCKETBASE_BASE_URL=${POCKETBASE_BASE_URL:-https://bz.baidua.top}
+      # - POCKETBASE_EMAIL=${POCKETBASE_EMAIL}
+      # - POCKETBASE_PASSWORD=${POCKETBASE_PASSWORD}
     restart: unless-stopped
     networks:
       - beszel-network

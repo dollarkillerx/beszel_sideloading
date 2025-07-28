@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE } from './utils/api';
 
 interface NodeLoadRequest {
   type: string;
@@ -22,7 +23,7 @@ const LoadStatusTest: React.FC = () => {
   const [newType, setNewType] = useState('');
   const [newId, setNewId] = useState('');
 
-  const API_BASE = 'http://localhost:8080/api';
+  // API_BASE is now imported from utils/api.ts
 
   const addRequest = () => {
     if (!newType.trim() || !newId.trim()) {

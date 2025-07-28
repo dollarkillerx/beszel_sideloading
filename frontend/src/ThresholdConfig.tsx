@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from './utils/api';
 
 interface SystemThreshold {
   id: number;
@@ -39,7 +40,7 @@ const ThresholdConfig: React.FC<ThresholdConfigProps> = ({ system, onClose, onSa
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE = 'http://localhost:8080/api';
+  // API_BASE is now imported from utils/api.ts
 
   useEffect(() => {
     fetchThreshold();
