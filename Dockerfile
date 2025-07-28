@@ -19,7 +19,7 @@ RUN bun install
 RUN bun run build
 
 # Go 后端构建阶段
-FROM golang:1.21-alpine AS backend-builder
+FROM golang:1.21 AS backend-builder
 
 # 设置工作目录
 WORKDIR /app/backend
@@ -34,10 +34,10 @@ RUN go mod download
 COPY backend/ ./
 
 # 构建Go应用
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main cmd/main.go
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o main cmd/main.go
 
 # 最终运行阶段
-FROM alpine:latest
+FROM debian:bookworm-slim
 
 # 设置工作目录
 WORKDIR /app
