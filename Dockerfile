@@ -47,8 +47,7 @@ COPY --from=backend-builder /app/backend/main .
 COPY --from=frontend-builder /app/frontend/dist ./static
 
 # 创建必要的目录
-RUN mkdir -p /app/data && \
-    chown -R appuser:appgroup /app
+RUN mkdir -p /app/data
 
 # 暴露端口
 EXPOSE 8080
