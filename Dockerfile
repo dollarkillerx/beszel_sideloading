@@ -21,6 +21,9 @@ RUN bun run build
 # Go 后端构建阶段
 FROM golang:1.21 AS backend-builder
 
+# 安装构建 SQLite 所需的 C 编译器和头文件
+RUN apt-get update && apt-get install -y gcc libc6-dev
+
 # 设置工作目录
 WORKDIR /app/backend
 
