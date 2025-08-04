@@ -27,10 +27,35 @@ func NewSystemService(cfg *config.Config) *SystemService {
 		log.Printf("PocketBase 登录成功，连接到: %s", cfg.PocketBase.BaseURL)
 	}
 	
-	return &SystemService{
+	service := &SystemService{
 		pbClient:         client,
 		config:           cfg,
 		thresholdService: NewThresholdService(),
+	}
+	
+	// 启动token刷新定时器（每12天刷新一次）
+	go service.startTokenRefreshTimer()
+	
+	return service
+}
+
+// startTokenRefreshTimer 启动token刷新定时器
+func (s *SystemService) startTokenRefreshTimer() {
+	ticker := time.NewTicker(12 * 24 * time.Hour) // 每12天刷新一次
+	defer ticker.Stop()
+	
+	for range ticker.C {
+		if err := s.pbClient.RefreshAuth(); err != nil {
+			log.Printf("刷新PocketBase认证失败: %v", err)
+			// 如果刷新失败，尝试重新登录
+			if err := s.pbClient.Login(s.config.PocketBase.Email, s.config.PocketBase.Password); err != nil {
+				log.Printf("重新登录PocketBase失败: %v", err)
+			} else {
+				log.Printf("成功重新登录PocketBase")
+			}
+		} else {
+			log.Printf("成功刷新PocketBase认证token")
+		}
 	}
 }
 

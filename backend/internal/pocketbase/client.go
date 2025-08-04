@@ -12,9 +12,12 @@ import (
 
 // Client PocketBase API 客户端
 type Client struct {
-	BaseURL    string
-	HTTPClient *http.Client
-	AuthToken  string
+	BaseURL       string
+	HTTPClient    *http.Client
+	AuthToken     string
+	Email         string // 保存认证信息用于自动重新登录
+	Password      string
+	TokenExpireAt time.Time // Token过期时间
 }
 
 // System 表示服务器/系统记录
@@ -123,8 +126,28 @@ func NewClient(baseURL string) *Client {
 	}
 }
 
+// ensureAuthenticated 确保客户端已认证并且token有效
+func (pb *Client) ensureAuthenticated() error {
+	// 检查token是否即将过期（提前5分钟刷新）
+	if pb.AuthToken == "" || time.Now().Add(5*time.Minute).After(pb.TokenExpireAt) {
+		if pb.Email == "" || pb.Password == "" {
+			return fmt.Errorf("缺少认证信息")
+		}
+		fmt.Printf("[PocketBase] Token即将过期或已过期，重新登录...\n")
+		return pb.Login(pb.Email, pb.Password)
+	}
+	return nil
+}
+
 // makeRequest 向PocketBase API发送HTTP请求
 func (pb *Client) makeRequest(method, endpoint string, body interface{}) (*http.Response, error) {
+	// 对于非认证请求，确保token有效
+	if !isAuthEndpoint(endpoint) {
+		if err := pb.ensureAuthenticated(); err != nil {
+			return nil, fmt.Errorf("认证失败: %w", err)
+		}
+	}
+
 	var bodyReader io.Reader
 
 	if body != nil {
@@ -150,11 +173,37 @@ func (pb *Client) makeRequest(method, endpoint string, body interface{}) (*http.
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
 
+	// 如果收到401未授权错误，尝试重新登录一次
+	if resp.StatusCode == http.StatusUnauthorized && !isAuthEndpoint(endpoint) {
+		resp.Body.Close()
+		if err := pb.Login(pb.Email, pb.Password); err != nil {
+			return nil, fmt.Errorf("重新登录失败: %w", err)
+		}
+		// 重新构建请求
+		req, err = http.NewRequest(method, pb.BaseURL+endpoint, bodyReader)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+pb.AuthToken)
+		return pb.HTTPClient.Do(req)
+	}
+
 	return resp, nil
+}
+
+// isAuthEndpoint 检查是否为认证相关的端点
+func isAuthEndpoint(endpoint string) bool {
+	return endpoint == "/api/collections/users/auth-with-password" ||
+		endpoint == "/api/collections/users/auth-refresh"
 }
 
 // Login 用户登录认证
 func (pb *Client) Login(email, password string) error {
+	// 保存认证信息用于后续自动重新登录
+	pb.Email = email
+	pb.Password = password
+
 	loginReq := LoginRequest{
 		Identity: email,
 		Password: password,
@@ -177,7 +226,18 @@ func (pb *Client) Login(email, password string) error {
 	}
 
 	pb.AuthToken = authResp.Token
+	// PocketBase JWT token默认有效期为14天，我们设置为13天后过期以确保安全
+	pb.TokenExpireAt = time.Now().Add(13 * 24 * time.Hour)
+	fmt.Printf("[PocketBase] 登录成功，Token将在 %s 过期\n", pb.TokenExpireAt.Format("2006-01-02 15:04:05"))
 	return nil
+}
+
+// RefreshAuth 刷新认证token
+func (pb *Client) RefreshAuth() error {
+	if pb.Email == "" || pb.Password == "" {
+		return fmt.Errorf("缺少认证信息")
+	}
+	return pb.Login(pb.Email, pb.Password)
 }
 
 // ListSystems 获取所有系统/服务器
