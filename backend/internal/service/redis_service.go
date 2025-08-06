@@ -20,21 +20,24 @@ type RedisService struct {
 
 // NewRedisService 创建Redis服务
 func NewRedisService(cfg *config.Config) (*RedisService, error) {
+	addr := fmt.Sprintf("%s:%s", cfg.Redis.Host, cfg.Redis.Port)
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", cfg.Redis.Host, cfg.Redis.Port),
+		Addr:     addr,
 		Password: cfg.Redis.Password, // 支持空密码
 		DB:       cfg.Redis.DB,
 	})
 
 	ctx := context.Background()
 
-	// 测试连接
+	// 测试Redis连接
 	_, err := rdb.Ping(ctx).Result()
 	if err != nil {
+		log.Printf("❌ Redis连接失败 [%s] 数据库:%d - %v", addr, cfg.Redis.DB, err)
+		rdb.Close()
 		return nil, fmt.Errorf("Redis连接失败: %w", err)
 	}
 
-	log.Printf("Redis连接成功: %s:%s DB:%d", cfg.Redis.Host, cfg.Redis.Port, cfg.Redis.DB)
+	log.Printf("✅ Redis连接成功 [%s] 数据库:%d", addr, cfg.Redis.DB)
 
 	return &RedisService{
 		client: rdb,
