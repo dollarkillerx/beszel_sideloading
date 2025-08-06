@@ -129,7 +129,8 @@ func GetHighLoadNodes(c *gin.Context) {
 		return
 	}
 
-	var highLoadNodes []map[string]interface{}
+	// 初始化为空数组而不是nil slice，确保JSON返回[]而不是null
+	highLoadNodes := make([]map[string]interface{}, 0)
 
 	// 遍历所有系统，找出高负载的
 	for _, system := range systems {

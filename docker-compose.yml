@@ -1,11 +1,8 @@
-version: '3.8'
-
 services:
   beszel-monitor:
     image: beszel-monitor
     container_name: beszel-monitor
-    ports:
-      - "8080:8080"
+    network_mode: host
     volumes:
       - ./data:/app/data
     environment:
@@ -15,13 +12,5 @@ services:
       # - POCKETBASE_EMAIL=${POCKETBASE_EMAIL}
       # - POCKETBASE_PASSWORD=${POCKETBASE_PASSWORD}
     restart: unless-stopped
-    networks:
-      - beszel-network
 
-networks:
-  beszel-network:
-    driver: bridge
-
-volumes:
-  beszel-data:
-    driver: local
+# 注意：使用 network_mode: host 时，不再需要自定义 networks 和端口映射
