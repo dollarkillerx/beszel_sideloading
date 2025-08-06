@@ -12,6 +12,7 @@ interface SystemStats {
   avg_mem_pct: number;
   avg_net_sent: number;
   avg_net_recv: number;
+  online_users: number;  // 在线人数
   last_update: string;
   load_status: string; // 新增：负载状态 'normal' | 'high'
 }
@@ -25,6 +26,7 @@ interface SystemThreshold {
   net_down_max: number;
   net_up_alert: number;
   net_down_alert: number;
+  online_users_limit: number;  // 在线人数阈值
   created_at: string;
   updated_at: string;
 }
@@ -180,6 +182,7 @@ const ServerMonitor: React.FC = () => {
                   <th>负载状态</th>
                   <th>CPU (%)</th>
                   <th>内存 (%)</th>
+                  <th>在线人数</th>
                   <th>网络I/O (Mbps)</th>
                   <th>最后更新</th>
                   <th>操作</th>
@@ -225,6 +228,9 @@ const ServerMonitor: React.FC = () => {
                         </div>
                         <span className="progress-text">{system.avg_mem_pct.toFixed(1)}%</span>
                       </div>
+                    </td>
+                    <td className="online-users-cell">
+                      <span className="online-users-count">{system.online_users}</span>
                     </td>
                     <td>
                       <div className="network-metrics">

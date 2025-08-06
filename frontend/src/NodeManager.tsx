@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import NodeTagManager from './NodeTagManager';
+import AliasManager from './AliasManager';
 import { API_BASE } from './utils/api';
 
 interface System {
@@ -12,20 +12,36 @@ interface System {
   updated_at: string;
 }
 
-interface NodeTag {
+interface SystemAlias {
   id: number;
   system_id: string;
-  tag_type: string;
-  tag_id: number;
+  alias: string;
   created_at: string;
   updated_at: string;
 }
 
+interface V2boardNode {
+  name: string;
+  id: number;
+  type: string;
+  online: number;
+  last_update: number;
+}
+
+interface SystemNodeInfo {
+  system_id: string;
+  system_name: string;
+  alias?: string;
+  nodes: V2boardNode[];
+  total_online: number;
+}
+
 const NodeManager: React.FC = () => {
-  const [showTagManager, setShowTagManager] = useState(false);
+  const [showAliasManager, setShowAliasManager] = useState(false);
   const [selectedSystem, setSelectedSystem] = useState<System | null>(null);
   const [systems, setSystems] = useState<System[]>([]);
-  const [systemTags, setSystemTags] = useState<Record<string, NodeTag[]>>({});
+  const [systemAliases, setSystemAliases] = useState<Record<string, SystemAlias | null>>({});
+  const [systemNodes, setSystemNodes] = useState<Record<string, SystemNodeInfo>>({});
   const [loading, setLoading] = useState(true);
 
   // API_BASE is now imported from utils/api.ts
@@ -45,8 +61,11 @@ const NodeManager: React.FC = () => {
       const systemsList = data.systems || [];
       setSystems(systemsList);
       
-      // 获取每个系统的标签
-      await fetchAllSystemTags(systemsList);
+      // 获取每个系统的别名
+      await fetchAllSystemAliases(systemsList);
+      
+      // 获取每个系统的节点信息
+      await fetchAllSystemNodes(systemsList);
     } catch (err) {
       console.error('获取服务器列表失败:', err);
     } finally {
@@ -54,39 +73,73 @@ const NodeManager: React.FC = () => {
     }
   };
 
-  const fetchAllSystemTags = async (systemsList: System[]) => {
-    const tagsMap: Record<string, NodeTag[]> = {};
+  const fetchAllSystemAliases = async (systemsList: System[]) => {
+    const aliasesMap: Record<string, SystemAlias | null> = {};
     
-    // 并行获取所有系统的标签
+    // 并行获取所有系统的别名
     await Promise.all(
       systemsList.map(async (system) => {
         try {
-          const response = await fetch(`${API_BASE}/systems/${system.id}/tags`);
+          const response = await fetch(`${API_BASE}/systems/${system.id}/alias`);
           if (response.ok) {
             const data = await response.json();
-            tagsMap[system.id] = data.tags || [];
+            aliasesMap[system.id] = data.alias || null;
           } else {
-            tagsMap[system.id] = [];
+            aliasesMap[system.id] = null;
           }
         } catch (err) {
-          console.error(`获取系统 ${system.id} 标签失败:`, err);
-          tagsMap[system.id] = [];
+          console.error(`获取系统 ${system.id} 别名失败:`, err);
+          aliasesMap[system.id] = null;
         }
       })
     );
     
-    setSystemTags(tagsMap);
+    setSystemAliases(aliasesMap);
   };
 
-  const handleManageTags = (system: System) => {
+  const fetchAllSystemNodes = async (systemsList: System[]) => {
+    const nodesMap: Record<string, SystemNodeInfo> = {};
+    
+    // 并行获取所有系统的节点信息
+    await Promise.all(
+      systemsList.map(async (system) => {
+        try {
+          const response = await fetch(`${API_BASE}/systems/${system.id}/nodes`);
+          if (response.ok) {
+            const nodeInfo = await response.json();
+            nodesMap[system.id] = nodeInfo;
+          } else {
+            nodesMap[system.id] = {
+              system_id: system.id,
+              system_name: system.name,
+              nodes: [],
+              total_online: 0
+            };
+          }
+        } catch (err) {
+          console.error(`获取系统 ${system.id} 节点信息失败:`, err);
+          nodesMap[system.id] = {
+            system_id: system.id,
+            system_name: system.name,
+            nodes: [],
+            total_online: 0
+          };
+        }
+      })
+    );
+    
+    setSystemNodes(nodesMap);
+  };
+
+  const handleManageAlias = (system: System) => {
     setSelectedSystem(system);
-    setShowTagManager(true);
+    setShowAliasManager(true);
   };
 
-  const handleCloseTagManager = () => {
-    setShowTagManager(false);
+  const handleCloseAliasManager = () => {
+    setShowAliasManager(false);
     setSelectedSystem(null);
-    // 重新获取标签数据以刷新显示
+    // 重新获取别名和节点数据以刷新显示
     fetchSystems();
   };
 
@@ -114,32 +167,50 @@ const NodeManager: React.FC = () => {
                 <p>地址: {system.host}:{system.port}</p>
               </div>
               
-              {/* 标签显示 */}
-              <div className="node-tags-section">
-                <div className="tags-header">
-                  <span>标签 ({(systemTags[system.id] || []).length})</span>
+              {/* 别名显示 */}
+              <div className="node-alias-section">
+                <div className="alias-header">
+                  <span>别名</span>
                 </div>
-                <div className="tags-display">
-                  {(systemTags[system.id] || []).length === 0 ? (
-                    <span className="no-tags-text">暂无标签</span>
+                <div className="alias-display">
+                  {systemAliases[system.id] ? (
+                    <span className="alias-text">{systemAliases[system.id]?.alias}</span>
                   ) : (
-                    <div className="tags-list-inline">
-                      {(systemTags[system.id] || []).map((tag) => (
-                        <span key={tag.id} className="tag-badge">
-                          {tag.tag_type}:{tag.tag_id}
-                        </span>
+                    <span className="no-alias-text">暂无别名</span>
+                  )}
+                </div>
+              </div>
+              
+              {/* 节点信息显示 */}
+              <div className="node-info-section">
+                <div className="node-info-header">
+                  <span>节点信息</span>
+                  {systemNodes[system.id] && systemNodes[system.id].nodes.length > 0 && (
+                    <span className="total-online">(总在线: {systemNodes[system.id].total_online})</span>
+                  )}
+                </div>
+                <div className="node-info-display">
+                  {systemNodes[system.id] && systemNodes[system.id].nodes.length > 0 ? (
+                    <div className="nodes-list">
+                      {systemNodes[system.id].nodes.map((node) => (
+                        <div key={node.id} className="node-item">
+                          <span className="node-name">{node.name}</span>
+                          <span className="node-online">在线: {node.online}</span>
+                        </div>
                       ))}
                     </div>
+                  ) : (
+                    <span className="no-nodes-text">未找到匹配节点</span>
                   )}
                 </div>
               </div>
               
               <div className="node-card-actions">
                 <button
-                  className="manage-tags-button"
-                  onClick={() => handleManageTags(system)}
+                  className="manage-alias-button"
+                  onClick={() => handleManageAlias(system)}
                 >
-                  管理标签
+                  管理别名
                 </button>
               </div>
             </div>
@@ -147,12 +218,12 @@ const NodeManager: React.FC = () => {
         </div>
       )}
 
-      {/* 标签管理模态框 */}
-      {showTagManager && selectedSystem && (
-        <NodeTagManager
+      {/* 别名管理模态框 */}
+      {showAliasManager && selectedSystem && (
+        <AliasManager
           systemId={selectedSystem.id}
           systemName={selectedSystem.name}
-          onClose={handleCloseTagManager}
+          onClose={handleCloseAliasManager}
         />
       )}
     </div>

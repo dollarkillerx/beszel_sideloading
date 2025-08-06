@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 )
 
 // Config 应用配置
@@ -10,6 +11,7 @@ type Config struct {
 	Database   DatabaseConfig   `json:"database"`
 	CORS       CORSConfig       `json:"cors"`
 	PocketBase PocketBaseConfig `json:"pocketbase"`
+	Redis      RedisConfig      `json:"redis"`
 }
 
 // ServerConfig 服务器配置
@@ -37,6 +39,14 @@ type PocketBaseConfig struct {
 	Password string `json:"password"`
 }
 
+// RedisConfig Redis配置
+type RedisConfig struct {
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	DB       int    `json:"db"`
+	Password string `json:"password"`
+}
+
 // Load 加载配置
 func Load() *Config {
 	return &Config{
@@ -57,6 +67,12 @@ func Load() *Config {
 			Email:    getEnv("POCKETBASE_EMAIL", "Spike.wook@gmail.com"),
 			Password: getEnv("POCKETBASE_PASSWORD", "adadmin/1213"),
 		},
+		Redis: RedisConfig{
+			Host:     getEnv("REDIS_HOST", "100.120.27.93"),
+			Port:     getEnv("REDIS_PORT", "6779"),
+			DB:       getEnvInt("REDIS_DB", 0),
+			Password: getEnv("REDIS_PASSWORD", "Kw7dQwFnLGAe2"),
+		},
 	}
 }
 
@@ -69,6 +85,16 @@ func (c *Config) GetAddress() string {
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
+	}
+	return defaultValue
+}
+
+// getEnvInt 获取整数环境变量，如果不存在或解析失败则返回默认值
+func getEnvInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
 	}
 	return defaultValue
 }

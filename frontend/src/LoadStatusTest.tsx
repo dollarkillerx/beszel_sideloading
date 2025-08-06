@@ -1,285 +1,273 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { API_BASE } from './utils/api';
 
-interface NodeLoadRequest {
+interface HighLoadNode {
+  name: string;
   type: string;
   id: number;
-}
-
-interface NodeLoadResponse {
-  type: string;
-  id: number;
-  load_status: string;
+  online: number;
 }
 
 const LoadStatusTest: React.FC = () => {
-  const [requests, setRequests] = useState<NodeLoadRequest[]>([
-    { type: 'proxy', id: 1 },
-    { type: 'cache', id: 2 }
-  ]);
-  const [responses, setResponses] = useState<NodeLoadResponse[]>([]);
+  const [highLoadNodes, setHighLoadNodes] = useState<HighLoadNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [newType, setNewType] = useState('');
-  const [newId, setNewId] = useState('');
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-  // API_BASE is now imported from utils/api.ts
-
-  const addRequest = () => {
-    if (!newType.trim() || !newId.trim()) {
-      setError('类型和ID都不能为空');
-      return;
-    }
-
-    const id = parseInt(newId);
-    if (isNaN(id)) {
-      setError('ID必须是数字');
-      return;
-    }
-
-    const newRequest: NodeLoadRequest = {
-      type: newType.trim(),
-      id: id
-    };
-
-    setRequests([...requests, newRequest]);
-    setNewType('');
-    setNewId('');
-    setError(null);
-  };
-
-  const removeRequest = (index: number) => {
-    setRequests(requests.filter((_, i) => i !== index));
-  };
-
-  const testLoadStatus = async () => {
-    if (requests.length === 0) {
-      setError('请至少添加一个查询项');
-      return;
-    }
-
+  const fetchHighLoadNodes = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE}/nodes/load-status`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requests),
-      });
+      const response = await fetch(`${API_BASE}/nodes/load-status`);
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || '查询失败');
+        throw new Error(errorData.error || '获取高负载节点失败');
       }
 
-      const data: NodeLoadResponse[] = await response.json();
-      setResponses(data);
+      const data: HighLoadNode[] = await response.json();
+      setHighLoadNodes(data);
+      setLastUpdate(new Date());
     } catch (err) {
-      setError(err instanceof Error ? err.message : '查询失败');
-      setResponses([]);
+      setError(err instanceof Error ? err.message : '获取高负载节点失败');
+      setHighLoadNodes([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'normal':
-        return '#4CAF50'; // 绿色
-      case 'high':
-        return '#f44336'; // 红色
-      case 'offline':
-        return '#757575'; // 深灰色
-      case 'no_data':
-        return '#FF9800'; // 橙色
-      case 'not_found':
-        return '#9E9E9E'; // 浅灰色
-      default:
-        return '#FF9800'; // 橙色
-    }
-  };
+  useEffect(() => {
+    fetchHighLoadNodes();
+  }, []);
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'normal':
-        return '正常';
-      case 'high':
-        return '高负载';
-      case 'offline':
-        return '离线';
-      case 'no_data':
-        return '无数据';
-      case 'not_found':
-        return '未找到';
+  const getTypeColor = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'vmess':
+        return '#2196F3'; // 蓝色
+      case 'vless':
+        return '#4CAF50'; // 绿色
+      case 'trojan':
+        return '#FF9800'; // 橙色
+      case 'shadowsocks':
+      case 'ss':
+        return '#9C27B0'; // 紫色
+      case 'hysteria2':
+        return '#E91E63'; // 粉红色
       default:
-        return '未知';
+        return '#757575'; // 灰色
     }
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
-      <h1>节点负载状态测试</h1>
-      <p>测试批量查询节点负载状态API</p>
+    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ marginBottom: '30px' }}>
+        <h1 style={{ margin: '0 0 10px 0', color: '#333' }}>🔥 高负载节点API测试</h1>
+        <p style={{ margin: '0', color: '#666', fontSize: '16px' }}>
+          测试 GET /api/nodes/load-status API - 获取所有高负载节点信息
+        </p>
+      </div>
 
       {error && (
         <div style={{ 
-          background: '#ffebee', 
-          color: '#c62828', 
-          padding: '10px', 
-          borderRadius: '4px', 
-          marginBottom: '20px' 
+          background: '#fee2e2', 
+          color: '#dc2626', 
+          padding: '15px', 
+          borderRadius: '8px', 
+          marginBottom: '20px',
+          border: '1px solid #fecaca'
         }}>
-          {error}
+          ❌ {error}
         </div>
       )}
 
-      {/* 添加查询项 */}
-      <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '4px' }}>
-        <h3>添加查询项</h3>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <input
-            type="text"
-            placeholder="类型 (如: ss, v2ray, trojan...)"
-            value={newType}
-            onChange={(e) => setNewType(e.target.value)}
-            style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px', flex: 1 }}
-          />
-          <input
-            type="number"
-            placeholder="ID"
-            value={newId}
-            onChange={(e) => setNewId(e.target.value)}
-            style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px', width: '100px' }}
-          />
+      {/* 控制面板 */}
+      <div style={{ 
+        background: '#f8fafc', 
+        padding: '20px', 
+        borderRadius: '8px', 
+        border: '1px solid #e5e7eb',
+        marginBottom: '30px' 
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ margin: '0 0 5px 0', color: '#374151' }}>API测试控制面板</h3>
+            <p style={{ margin: '0', color: '#6b7280', fontSize: '14px' }}>
+              最后更新: {lastUpdate.toLocaleString('zh-CN')}
+            </p>
+          </div>
           <button
-            onClick={addRequest}
+            onClick={fetchHighLoadNodes}
+            disabled={loading}
             style={{
-              padding: '8px 16px',
-              background: '#2196F3',
+              padding: '12px 24px',
+              background: loading ? '#d1d5db' : '#3b82f6',
               color: 'white',
               border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
+              borderRadius: '6px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}
           >
-            添加
+            {loading ? '🔄 查询中...' : '🔄 刷新数据'}
           </button>
         </div>
       </div>
 
-      {/* 当前查询项列表 */}
-      <div style={{ marginBottom: '20px' }}>
-        <h3>查询列表 ({requests.length})</h3>
-        {requests.length === 0 ? (
-          <p style={{ color: '#666' }}>暂无查询项</p>
+      {/* 查询结果 */}
+      <div style={{ marginBottom: '30px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <h2 style={{ margin: '0', color: '#374151' }}>📊 高负载节点列表</h2>
+          <div style={{
+            padding: '6px 12px',
+            background: highLoadNodes.length > 0 ? '#fee2e2' : '#f0fdf4',
+            color: highLoadNodes.length > 0 ? '#dc2626' : '#059669',
+            borderRadius: '20px',
+            fontSize: '14px',
+            fontWeight: '600'
+          }}>
+            {highLoadNodes.length}个节点
+          </div>
+        </div>
+
+        {loading && highLoadNodes.length === 0 ? (
+          <div style={{
+            padding: '60px 20px',
+            textAlign: 'center',
+            background: '#f9fafb',
+            borderRadius: '8px',
+            color: '#6b7280'
+          }}>
+            🔄 正在获取高负载节点数据...
+          </div>
+        ) : highLoadNodes.length === 0 ? (
+          <div style={{
+            padding: '60px 20px',
+            textAlign: 'center',
+            background: '#f0fdf4',
+            borderRadius: '8px',
+            color: '#059669',
+            border: '2px dashed #bbf7d0'
+          }}>
+            🎉 当前暂无高负载节点，所有节点运行正常！
+          </div>
         ) : (
-          <div>
-            {requests.map((req, index) => (
+          <div style={{ 
+            background: '#fff', 
+            borderRadius: '8px', 
+            border: '1px solid #e5e7eb',
+            overflow: 'hidden'
+          }}>
+            {highLoadNodes.map((node, index) => (
               <div
-                key={index}
+                key={`${node.id}-${index}`}
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  padding: '10px',
-                  background: '#f5f5f5',
-                  marginBottom: '5px',
-                  borderRadius: '4px'
+                  padding: '20px',
+                  borderBottom: index < highLoadNodes.length - 1 ? '1px solid #f3f4f6' : 'none',
+                  background: '#fef2f2',
+                  borderLeft: '4px solid #dc2626'
                 }}
               >
-                <span>类型: {req.type}, ID: {req.id}</span>
-                <button
-                  onClick={() => removeRequest(index)}
-                  style={{
-                    padding: '4px 8px',
-                    background: '#f44336',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  删除
-                </button>
+                <div style={{ flex: 1 }}>
+                  <div style={{ 
+                    fontSize: '16px', 
+                    fontWeight: '600', 
+                    color: '#111827',
+                    marginBottom: '8px'
+                  }}>
+                    {node.name}
+                  </div>
+                  <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                    <span
+                      style={{
+                        padding: '4px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                        background: getTypeColor(node.type),
+                        color: 'white'
+                      }}
+                    >
+                      {node.type}
+                    </span>
+                    <span style={{ color: '#6b7280', fontSize: '14px' }}>
+                      ID: {node.id}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{
+                    fontSize: '24px',
+                    fontWeight: '700',
+                    color: '#dc2626',
+                    marginBottom: '4px'
+                  }}>
+                    {node.online}人
+                  </div>
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: '#6b7280',
+                    textTransform: 'uppercase',
+                    fontWeight: '500'
+                  }}>
+                    在线用户
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* 测试按钮 */}
-      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <button
-          onClick={testLoadStatus}
-          disabled={loading || requests.length === 0}
-          style={{
-            padding: '12px 24px',
-            background: loading ? '#ccc' : '#4CAF50',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            fontSize: '16px'
-          }}
-        >
-          {loading ? '查询中...' : '测试负载状态查询'}
-        </button>
-      </div>
-
-      {/* 查询结果 */}
-      {responses.length > 0 && (
-        <div>
-          <h3>查询结果</h3>
-          <div style={{ border: '1px solid #ddd', borderRadius: '4px' }}>
-            {responses.map((resp, index) => (
-              <div
-                key={index}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '15px',
-                  borderBottom: index < responses.length - 1 ? '1px solid #eee' : 'none'
-                }}
-              >
-                <div>
-                  <strong>类型:</strong> {resp.type} | <strong>ID:</strong> {resp.id}
-                </div>
-                <div
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '20px',
-                    color: 'white',
-                    background: getStatusColor(resp.load_status),
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {getStatusText(resp.load_status)}
-                </div>
-              </div>
-            ))}
+      {/* API 信息 */}
+      <div style={{ 
+        background: '#f8fafc', 
+        padding: '20px', 
+        borderRadius: '8px', 
+        border: '1px solid #e5e7eb' 
+      }}>
+        <h3 style={{ margin: '0 0 15px 0', color: '#374151' }}>🔧 API 技术信息</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div>
+            <p style={{ margin: '0 0 8px 0', fontWeight: '600', color: '#374151' }}>请求信息:</p>
+            <div style={{ background: '#fff', padding: '15px', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+              <code style={{ fontSize: '14px', color: '#059669' }}>GET /api/nodes/load-status</code>
+            </div>
+          </div>
+          <div>
+            <p style={{ margin: '0 0 8px 0', fontWeight: '600', color: '#374151' }}>响应状态:</p>
+            <div style={{ background: '#fff', padding: '15px', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+              <code style={{ fontSize: '14px', color: '#dc2626' }}>
+                {error ? 'Error' : highLoadNodes.length > 0 ? `${highLoadNodes.length} nodes` : 'No data'}
+              </code>
+            </div>
           </div>
         </div>
-      )}
-
-      {/* API 信息 */}
-      <div style={{ marginTop: '30px', padding: '15px', background: '#f9f9f9', borderRadius: '4px' }}>
-        <h4>API 信息</h4>
-        <p><strong>端点:</strong> POST /api/nodes/load-status</p>
-        <p><strong>请求格式:</strong></p>
-        <pre style={{ background: '#fff', padding: '10px', borderRadius: '4px', overflow: 'auto' }}>
-{JSON.stringify(requests, null, 2)}
-        </pre>
-        {responses.length > 0 && (
-          <>
-            <p><strong>响应格式:</strong></p>
-            <pre style={{ background: '#fff', padding: '10px', borderRadius: '4px', overflow: 'auto' }}>
-{JSON.stringify(responses, null, 2)}
+        
+        {highLoadNodes.length > 0 && (
+          <div style={{ marginTop: '20px' }}>
+            <p style={{ margin: '0 0 10px 0', fontWeight: '600', color: '#374151' }}>响应数据示例:</p>
+            <pre style={{ 
+              background: '#fff', 
+              padding: '15px', 
+              borderRadius: '6px', 
+              overflow: 'auto',
+              border: '1px solid #d1d5db',
+              fontSize: '12px',
+              color: '#374151',
+              maxHeight: '200px'
+            }}>
+{JSON.stringify(highLoadNodes.slice(0, 2), null, 2)}
             </pre>
-          </>
+          </div>
         )}
       </div>
     </div>

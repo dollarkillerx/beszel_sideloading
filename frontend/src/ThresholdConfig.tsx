@@ -10,6 +10,7 @@ interface SystemThreshold {
   net_down_max: number;
   net_up_alert: number;
   net_down_alert: number;
+  online_users_limit: number;  // 在线人数阈值
   created_at: string;
   updated_at: string;
 }
@@ -274,6 +275,21 @@ const ThresholdConfig: React.FC<ThresholdConfigProps> = ({ system, onClose, onSa
               }}
             />
             <small>当下行速度达到最大值的该百分比时告警</small>
+          </div>
+
+          <div className="form-group">
+            <label>在线人数阈值 (人)</label>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={threshold.online_users_limit || 300}
+              onChange={(e) => {
+                const value = e.target.value === '' ? 300 : parseInt(e.target.value);
+                handleInputChange('online_users_limit', value);
+              }}
+            />
+            <small>当在线人数超过该数值时显示告警状态（默认300人）</small>
           </div>
         </div>
 

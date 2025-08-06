@@ -40,11 +40,12 @@ type SystemSummary struct {
 // SystemWithAvgStats 带平均统计的系统
 type SystemWithAvgStats struct {
 	System
-	AvgCPU     float64   `json:"avg_cpu"`
-	AvgMemPct  float64   `json:"avg_mem_pct"`
-	AvgNetSent float64   `json:"avg_net_sent"`
-	AvgNetRecv float64   `json:"avg_net_recv"`
-	LastUpdate time.Time `json:"last_update"`
+	AvgCPU      float64   `json:"avg_cpu"`
+	AvgMemPct   float64   `json:"avg_mem_pct"`
+	AvgNetSent  float64   `json:"avg_net_sent"`
+	AvgNetRecv  float64   `json:"avg_net_recv"`
+	OnlineUsers int       `json:"online_users"`     // 在线人数
+	LastUpdate  time.Time `json:"last_update"`
 }
 
 // AverageStats 平均统计数据
@@ -58,16 +59,17 @@ type AverageStats struct {
 
 // SystemThreshold 系统阈值配置（本地SQLite存储）
 type SystemThreshold struct {
-	ID              uint    `gorm:"primaryKey" json:"id"`
-	SystemID        string  `gorm:"uniqueIndex;not null" json:"system_id"`
-	CPUAlertLimit   float64 `gorm:"default:90.0" json:"cpu_alert_limit"`   // CPU告警阈值（%）
-	MemAlertLimit   float64 `gorm:"default:90.0" json:"mem_alert_limit"`   // 内存告警阈值（%）
-	NetUpMax        float64 `gorm:"default:0" json:"net_up_max"`           // 上行最大Mbps（历史极限值）
-	NetDownMax      float64 `gorm:"default:0" json:"net_down_max"`         // 下行最大Mbps（历史极限值）
-	NetUpAlert      float64 `gorm:"default:80.0" json:"net_up_alert"`      // 上行告警阈值（百分比）
-	NetDownAlert    float64 `gorm:"default:80.0" json:"net_down_alert"`    // 下行告警阈值（百分比）
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID                uint    `gorm:"primaryKey" json:"id"`
+	SystemID          string  `gorm:"uniqueIndex;not null" json:"system_id"`
+	CPUAlertLimit     float64 `gorm:"default:90.0" json:"cpu_alert_limit"`     // CPU告警阈值（%）
+	MemAlertLimit     float64 `gorm:"default:90.0" json:"mem_alert_limit"`     // 内存告警阈值（%）
+	NetUpMax          float64 `gorm:"default:0" json:"net_up_max"`             // 上行最大Mbps（历史极限值）
+	NetDownMax        float64 `gorm:"default:0" json:"net_down_max"`           // 下行最大Mbps（历史极限值）
+	NetUpAlert        float64 `gorm:"default:80.0" json:"net_up_alert"`        // 上行告警阈值（百分比）
+	NetDownAlert      float64 `gorm:"default:80.0" json:"net_down_alert"`      // 下行告警阈值（百分比）
+	OnlineUsersLimit  int     `gorm:"default:300" json:"online_users_limit"`   // 在线人数告警阈值（默认300人）
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // SystemWithLoadStatus 带负载状态的系统统计
@@ -76,37 +78,41 @@ type SystemWithLoadStatus struct {
 	LoadStatus string `json:"load_status"` // normal, high
 }
 
-// NodeTag 服务器标签（本地SQLite存储）
-type NodeTag struct {
-	ID       uint   `gorm:"primaryKey" json:"id"`
-	SystemID string `gorm:"not null" json:"system_id"`        // 服务器ID
-	TagType  string `gorm:"not null" json:"tag_type"`         // 标签类型
-	TagID    int    `gorm:"not null" json:"tag_id"`           // 标签ID
+// SystemAlias 服务器别名（本地存储）
+type SystemAlias struct {
+	ID       uint   `json:"id"`
+	SystemID string `json:"system_id"`  // 服务器ID，唯一索引
+	Alias    string `json:"alias"`      // 别名
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// NodeTagRequest 创建/删除标签的请求结构
-type NodeTagRequest struct {
-	Type string `json:"type" binding:"required"` // 标签类型
-	ID   int    `json:"id" binding:"required"`   // 标签ID
+// SystemAliasRequest 创建/更新别名的请求结构
+type SystemAliasRequest struct {
+	Alias string `json:"alias" binding:"required"` // 别名
 }
 
-// NodeTagsResponse 节点标签响应
-type NodeTagsResponse struct {
-	Success string    `json:"success"`
-	Tags    []NodeTag `json:"tags,omitempty"`
+// SystemAliasResponse 别名响应
+type SystemAliasResponse struct {
+	Success string       `json:"success,omitempty"`
+	Alias   *SystemAlias `json:"alias,omitempty"`
 }
 
-// NodeLoadRequest 节点负载查询请求
-type NodeLoadRequest struct {
-	Type string `json:"type" binding:"required"` // 标签类型
-	ID   int    `json:"id" binding:"required"`   // 标签ID
+// V2boardNode V2board节点信息
+type V2boardNode struct {
+	Name       string `json:"name"`
+	ID         int    `json:"id"`
+	Type       string `json:"type"`
+	Online     int    `json:"online"`
+	LastUpdate int64  `json:"last_update"`
 }
 
-// NodeLoadResponse 节点负载查询响应
-type NodeLoadResponse struct {
-	Type       string `json:"type"`        // 标签类型
-	ID         int    `json:"id"`          // 标签ID
-	LoadStatus string `json:"load_status"` // 负载状态: normal, high, not_found
+// SystemNodeInfo 服务器节点信息
+type SystemNodeInfo struct {
+	SystemID    string        `json:"system_id"`
+	SystemName  string        `json:"system_name"`
+	Alias       string        `json:"alias,omitempty"`
+	Nodes       []V2boardNode `json:"nodes"`
+	TotalOnline int           `json:"total_online"`
 }
+

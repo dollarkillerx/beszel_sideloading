@@ -14,6 +14,7 @@ type SystemService struct {
 	pbClient         *pocketbase.Client
 	config           *config.Config
 	thresholdService *ThresholdService
+	nodeService      *NodeService
 }
 
 // NewSystemService 创建系统服务
@@ -37,6 +38,11 @@ func NewSystemService(cfg *config.Config) *SystemService {
 	go service.startTokenRefreshTimer()
 	
 	return service
+}
+
+// SetNodeService 设置节点服务（避免循环依赖）
+func (s *SystemService) SetNodeService(nodeService *NodeService) {
+	s.nodeService = nodeService
 }
 
 // startTokenRefreshTimer 启动token刷新定时器
@@ -123,13 +129,21 @@ func (s *SystemService) GetSystemsWithAvgStats() ([]*models.SystemWithAvgStats, 
 		if err != nil {
 			log.Printf("获取系统 %s 统计数据失败: %v", system.Name, err)
 			// 如果获取失败，仍然添加系统信息，但统计数据为0
+			onlineUsers := 0
+			if s.nodeService != nil {
+				if nodeInfo, err := s.nodeService.GetSystemNodeInfo(system.ID, system.Name); err == nil {
+					onlineUsers = nodeInfo.TotalOnline
+				}
+			}
+			
 			systemWithStats := &models.SystemWithAvgStats{
-				System:     *system,
-				AvgCPU:     0,
-				AvgMemPct:  0,
-				AvgNetSent: 0,
-				AvgNetRecv: 0,
-				LastUpdate: time.Now(),
+				System:      *system,
+				AvgCPU:      0,
+				AvgMemPct:   0,
+				AvgNetSent:  0,
+				AvgNetRecv:  0,
+				OnlineUsers: onlineUsers,
+				LastUpdate:  time.Now(),
 			}
 			result = append(result, systemWithStats)
 			continue
@@ -138,13 +152,22 @@ func (s *SystemService) GetSystemsWithAvgStats() ([]*models.SystemWithAvgStats, 
 		// 计算平均值
 		avgStats := calculateAverageStats(pbStats.Items)
 		
+		// 获取在线人数
+		onlineUsers := 0
+		if s.nodeService != nil {
+			if nodeInfo, err := s.nodeService.GetSystemNodeInfo(system.ID, system.Name); err == nil {
+				onlineUsers = nodeInfo.TotalOnline
+			}
+		}
+		
 		systemWithStats := &models.SystemWithAvgStats{
-			System:     *system,
-			AvgCPU:     avgStats.AvgCPU,
-			AvgMemPct:  avgStats.AvgMemPct,
-			AvgNetSent: avgStats.AvgNetSent,
-			AvgNetRecv: avgStats.AvgNetRecv,
-			LastUpdate: avgStats.LastUpdate,
+			System:      *system,
+			AvgCPU:      avgStats.AvgCPU,
+			AvgMemPct:   avgStats.AvgMemPct,
+			AvgNetSent:  avgStats.AvgNetSent,
+			AvgNetRecv:  avgStats.AvgNetRecv,
+			OnlineUsers: onlineUsers,
+			LastUpdate:  avgStats.LastUpdate,
 		}
 		
 		result = append(result, systemWithStats)
@@ -234,6 +257,12 @@ func (s *SystemService) CalculateLoadStatus(system *models.SystemWithAvgStats, t
 				system.Name, netDownMbps, downThreshold, threshold.NetDownAlert, threshold.NetDownMax)
 			return "high"
 		}
+	}
+	
+	// 检查在线人数 - 如果设置了阈值且大于0
+	if threshold.OnlineUsersLimit > 0 && system.OnlineUsers >= threshold.OnlineUsersLimit {
+		log.Printf("系统 %s 在线人数过多: %d >= %d", system.Name, system.OnlineUsers, threshold.OnlineUsersLimit)
+		return "high"
 	}
 	
 	return "normal"

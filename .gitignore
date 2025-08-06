@@ -34,3 +34,7 @@ backend/server
 backend/server_monitor.db
 CLAUDE.md
 backend/badger_data/
+
+frontend/node_modules/
+frontend/dist/
+backend/static/

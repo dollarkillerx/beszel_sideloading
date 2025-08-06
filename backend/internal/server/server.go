@@ -1,6 +1,7 @@
 package server
 
 import (
+	"backend/internal/api/handlers"
 	"backend/internal/api/router"
 	"backend/internal/config"
 	"backend/internal/service"
@@ -21,6 +22,8 @@ type Server struct {
 	httpServer    *http.Server
 	router        *gin.Engine
 	systemService *service.SystemService
+	redisService  *service.RedisService
+	nodeService   *service.NodeService
 }
 
 // New 创建新的服务器实例
@@ -72,6 +75,15 @@ func (s *Server) Stop() error {
 	}
 
 	log.Println("Shutting down server...")
+	
+	// 关闭Redis连接
+	if s.redisService != nil {
+		if err := s.redisService.Close(); err != nil {
+			log.Printf("Failed to close Redis connection: %v", err)
+		} else {
+			log.Println("Redis connection closed")
+		}
+	}
 
 	// 创建5秒超时的context
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -93,6 +105,25 @@ func (s *Server) initServices() error {
 	
 	// 初始化系统服务
 	s.systemService = service.NewSystemService(s.config)
+	
+	// 初始化Redis服务
+	var err error
+	s.redisService, err = service.NewRedisService(s.config)
+	if err != nil {
+		log.Printf("Redis服务初始化失败: %v", err)
+		// Redis失败不应该阻止服务启动，但会影响节点查询功能
+		log.Println("节点查询功能将不可用")
+	}
+	
+	// 初始化节点服务
+	if s.redisService != nil {
+		s.nodeService = service.NewNodeService(s.redisService)
+		// 设置SystemService的NodeService引用
+		s.systemService.SetNodeService(s.nodeService)
+		// 初始化节点处理器
+		handlers.InitNodeHandler(s.nodeService)
+		log.Println("节点服务初始化成功")
+	}
 	
 	log.Println("Services initialized successfully")
 	return nil

@@ -39,16 +39,12 @@ func (s *BadgerStorage) thresholdKey(systemID string) []byte {
 	return []byte(fmt.Sprintf("threshold:%s", systemID))
 }
 
-func (s *BadgerStorage) nodeTagKey(systemID string, tagType string, tagID int) []byte {
-	return []byte(fmt.Sprintf("nodetag:%s:%s:%d", systemID, tagType, tagID))
+func (s *BadgerStorage) aliasKey(systemID string) []byte {
+	return []byte(fmt.Sprintf("alias:%s", systemID))
 }
 
-func (s *BadgerStorage) nodeTagPrefixBySystem(systemID string) []byte {
-	return []byte(fmt.Sprintf("nodetag:%s:", systemID))
-}
-
-func (s *BadgerStorage) nodeTagPrefixByTypeAndID(tagType string, tagID int) []byte {
-	return []byte("nodetag:")
+func (s *BadgerStorage) aliasPrefix() []byte {
+	return []byte("alias:")
 }
 
 // CreateOrUpdateThreshold 创建或更新系统阈值
@@ -150,117 +146,102 @@ func (s *BadgerStorage) DeleteThreshold(systemID string) error {
 	})
 }
 
-// CreateNodeTag 创建节点标签
-func (s *BadgerStorage) CreateNodeTag(tag *models.NodeTag) error {
+// SetSystemAlias 设置系统别名（创建或更新）
+func (s *BadgerStorage) SetSystemAlias(alias *models.SystemAlias) error {
 	return s.db.Update(func(txn *badger.Txn) error {
-		if tag.ID == 0 {
-			tag.ID = uint(time.Now().UnixNano())
+		// 先检查是否已存在
+		key := s.aliasKey(alias.SystemID)
+		item, err := txn.Get(key)
+		if err == nil {
+			// 已存在，保留ID和创建时间
+			var existing models.SystemAlias
+			err = item.Value(func(val []byte) error {
+				return json.Unmarshal(val, &existing)
+			})
+			if err == nil {
+				if alias.ID == 0 {
+					alias.ID = existing.ID
+				}
+				if alias.CreatedAt.IsZero() {
+					alias.CreatedAt = existing.CreatedAt
+				}
+			}
+		} else {
+			// 新建记录
+			if alias.ID == 0 {
+				alias.ID = uint(time.Now().UnixNano())
+			}
+			if alias.CreatedAt.IsZero() {
+				alias.CreatedAt = time.Now()
+			}
 		}
-		if tag.CreatedAt.IsZero() {
-			tag.CreatedAt = time.Now()
-		}
-		tag.UpdatedAt = time.Now()
 
-		data, err := json.Marshal(tag)
+		alias.UpdatedAt = time.Now()
+
+		data, err := json.Marshal(alias)
 		if err != nil {
 			return err
 		}
 
-		key := s.nodeTagKey(tag.SystemID, tag.TagType, tag.TagID)
 		return txn.Set(key, data)
 	})
 }
 
-// GetNodeTags 获取系统的所有标签
-func (s *BadgerStorage) GetNodeTags(systemID string) ([]*models.NodeTag, error) {
-	var tags []*models.NodeTag
+// GetSystemAlias 获取系统别名
+func (s *BadgerStorage) GetSystemAlias(systemID string) (*models.SystemAlias, error) {
+	var alias models.SystemAlias
+
+	err := s.db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(s.aliasKey(systemID))
+		if err != nil {
+			return err
+		}
+
+		return item.Value(func(val []byte) error {
+			return json.Unmarshal(val, &alias)
+		})
+	})
+
+	if err == badger.ErrKeyNotFound {
+		return nil, nil
+	}
+
+	return &alias, err
+}
+
+// GetAllSystemAliases 获取所有系统别名
+func (s *BadgerStorage) GetAllSystemAliases() ([]*models.SystemAlias, error) {
+	var aliases []*models.SystemAlias
 
 	err := s.db.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
-		opts.Prefix = s.nodeTagPrefixBySystem(systemID)
+		opts.Prefix = s.aliasPrefix()
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
-			var tag models.NodeTag
+			var alias models.SystemAlias
 
 			err := item.Value(func(val []byte) error {
-				return json.Unmarshal(val, &tag)
+				return json.Unmarshal(val, &alias)
 			})
 			if err != nil {
-				log.Printf("Failed to unmarshal node tag: %v", err)
+				log.Printf("Failed to unmarshal alias: %v", err)
 				continue
 			}
 
-			tags = append(tags, &tag)
+			aliases = append(aliases, &alias)
 		}
 		return nil
 	})
 
-	return tags, err
+	return aliases, err
 }
 
-// GetNodeTagsByTypeAndID 根据标签类型和ID获取所有相关节点
-func (s *BadgerStorage) GetNodeTagsByTypeAndID(tagType string, tagID int) ([]*models.NodeTag, error) {
-	var tags []*models.NodeTag
-
-	err := s.db.View(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.Prefix = s.nodeTagPrefixByTypeAndID(tagType, tagID)
-		it := txn.NewIterator(opts)
-		defer it.Close()
-
-		for it.Rewind(); it.Valid(); it.Next() {
-			item := it.Item()
-			var tag models.NodeTag
-
-			err := item.Value(func(val []byte) error {
-				return json.Unmarshal(val, &tag)
-			})
-			if err != nil {
-				log.Printf("Failed to unmarshal node tag: %v", err)
-				continue
-			}
-
-			// 过滤匹配的标签类型和ID
-			if tag.TagType == tagType && tag.TagID == tagID {
-				tags = append(tags, &tag)
-			}
-		}
-		return nil
-	})
-
-	return tags, err
-}
-
-// DeleteNodeTag 删除特定标签
-func (s *BadgerStorage) DeleteNodeTag(systemID string, tagType string, tagID int) error {
+// DeleteSystemAlias 删除系统别名
+func (s *BadgerStorage) DeleteSystemAlias(systemID string) error {
 	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Delete(s.nodeTagKey(systemID, tagType, tagID))
-	})
-}
-
-// DeleteAllNodeTags 删除系统的所有标签
-func (s *BadgerStorage) DeleteAllNodeTags(systemID string) error {
-	return s.db.Update(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.Prefix = s.nodeTagPrefixBySystem(systemID)
-		it := txn.NewIterator(opts)
-		defer it.Close()
-
-		var keys [][]byte
-		for it.Rewind(); it.Valid(); it.Next() {
-			key := it.Item().KeyCopy(nil)
-			keys = append(keys, key)
-		}
-
-		for _, key := range keys {
-			if err := txn.Delete(key); err != nil {
-				return err
-			}
-		}
-
-		return nil
+		return txn.Delete(s.aliasKey(systemID))
 	})
 }
