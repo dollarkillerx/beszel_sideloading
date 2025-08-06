@@ -114,6 +114,40 @@
 - `not_found`: 未找到对应标签
 - `no_data`: 无统计数据
 
+---
+
+#### 高负载节点列表 API
+
+**端点**: `GET /api/nodes/load-status`
+
+**用途**: 获取所有高负载或离线服务器的节点列表，便于批量监控和告警。
+
+**请求方式**: 无需参数，直接GET请求。
+
+**响应示例**:
+```json
+[
+  {
+    "name": "移动联通深港IEPL11-X-02",
+    "type": "trojan",
+    "id": 383,
+    "online": 120
+  },
+  {
+    "name": "其他高负载节点",
+    "type": "ss",
+    "id": 12,
+    "online": 2
+  }
+]
+```
+
+**字段说明**:
+- `name`: 节点名称
+- `type`: 节点类型（如 trojan/ss/v2ray 等）
+- `id`: 节点ID
+- `online`: 在线人数/连接数
+
 ### 服务器管理 API
 
 - `GET /api/systems` - 获取所有服务器列表
