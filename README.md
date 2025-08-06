@@ -9,7 +9,7 @@
 - **负载状态**: 基于阈值配置的智能负载状态判断
 - **批量查询**: 支持批量查询节点负载状态API
 - **实时更新**: 基于PocketBase的实时数据更新
-- **Docker部署**: 一键Docker部署，前后端集成
+- **Docker部署**: 一键Docker部署，前后端集成 `docker build -t beszel-monitor .`
 
 ## 快速开始
 

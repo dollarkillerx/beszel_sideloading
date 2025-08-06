@@ -61,7 +61,18 @@ const HighLoadNodes: React.FC = () => {
       const nodesResponse = await fetch(`${API_BASE}/nodes/load-status`);
       if (nodesResponse.ok) {
         const nodesData = await nodesResponse.json();
-        setHighLoadNodes(nodesData);
+        // 如果是服务不可用的情况，使用返回的data字段
+        if (Array.isArray(nodesData)) {
+          setHighLoadNodes(nodesData);
+        } else if (nodesData.data && Array.isArray(nodesData.data)) {
+          setHighLoadNodes(nodesData.data);
+        } else {
+          setHighLoadNodes([]);
+        }
+      } else if (nodesResponse.status === 503) {
+        // 服务不可用，但不是错误
+        setHighLoadNodes([]);
+        console.warn('节点服务不可用，Redis连接失败');
       } else {
         setHighLoadNodes([]);
       }

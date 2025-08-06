@@ -26,8 +26,15 @@ const LoadStatusTest: React.FC = () => {
         throw new Error(errorData.error || '获取高负载节点失败');
       }
 
-      const data: HighLoadNode[] = await response.json();
-      setHighLoadNodes(data);
+      const data = await response.json();
+      // 如果是服务不可用的情况，使用返回的data字段
+      if (Array.isArray(data)) {
+        setHighLoadNodes(data);
+      } else if (data.data && Array.isArray(data.data)) {
+        setHighLoadNodes(data.data);
+      } else {
+        setHighLoadNodes([]);
+      }
       setLastUpdate(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : '获取高负载节点失败');

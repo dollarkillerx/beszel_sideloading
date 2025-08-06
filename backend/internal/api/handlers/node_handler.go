@@ -16,6 +16,12 @@ func InitNodeHandler(ns *service.NodeService) {
 
 // GetSystemNodes 获取系统的节点信息
 func GetSystemNodes(c *gin.Context) {
+	// 检查nodeService是否初始化
+	if nodeService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "节点服务不可用，Redis连接失败"})
+		return
+	}
+
 	systemID := c.Param("id")
 	if systemID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "系统ID不能为空"})
@@ -54,6 +60,12 @@ func GetSystemNodes(c *gin.Context) {
 
 // GetAllSystemsNodes 获取所有系统的节点信息
 func GetAllSystemsNodes(c *gin.Context) {
+	// 检查nodeService是否初始化
+	if nodeService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "节点服务不可用，Redis连接失败"})
+		return
+	}
+
 	// 获取所有系统
 	systems, err := systemService.GetSystems()
 	if err != nil {
@@ -75,6 +87,12 @@ func GetAllSystemsNodes(c *gin.Context) {
 
 // SearchNodes 搜索节点
 func SearchNodes(c *gin.Context) {
+	// 检查nodeService是否初始化
+	if nodeService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "节点服务不可用，Redis连接失败"})
+		return
+	}
+
 	keyword := c.Query("keyword")
 	if keyword == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "搜索关键词不能为空"})
@@ -95,6 +113,15 @@ func SearchNodes(c *gin.Context) {
 
 // GetHighLoadNodes 获取所有高负载节点
 func GetHighLoadNodes(c *gin.Context) {
+	// 检查nodeService是否初始化
+	if nodeService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "节点服务不可用，Redis连接失败",
+			"data":  []map[string]interface{}{},
+		})
+		return
+	}
+
 	// 获取带负载状态的系统列表
 	systems, err := systemService.GetSystemsWithLoadStatus()
 	if err != nil {
