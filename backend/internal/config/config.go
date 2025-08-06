@@ -68,7 +68,7 @@ func Load() *Config {
 			Password: getEnv("POCKETBASE_PASSWORD", "adadmin/1213"),
 		},
 		Redis: RedisConfig{
-			Host:     getEnv("REDIS_HOST", "100.120.27.93"),
+			Host:     getEnv("REDIS_HOST", "192.168.0.32"),
 			Port:     getEnv("REDIS_PORT", "6779"),
 			DB:       getEnvInt("REDIS_DB", 0),
 			Password: getEnv("REDIS_PASSWORD", "Kw7dQwFnLGAe2"),
@@ -98,4 +98,3 @@ func getEnvInt(key string, defaultValue int) int {
 	}
 	return defaultValue
 }
-
