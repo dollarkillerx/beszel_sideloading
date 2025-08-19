@@ -1,6 +1,6 @@
 services:
   beszel-monitor:
-    image: beszel-monitor
+    image: imaod/beszel-monitor:latest
     container_name: beszel-monitor
     network_mode: host
     volumes:
