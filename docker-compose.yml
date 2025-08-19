@@ -8,9 +8,13 @@ services:
     environment:
       - GIN_MODE=release
       - DATABASE_PATH=/app/data/badger_data
-      # - POCKETBASE_BASE_URL=${POCKETBASE_BASE_URL:-https://bz.baidua.top}
-      # - POCKETBASE_EMAIL=${POCKETBASE_EMAIL}
-      # - POCKETBASE_PASSWORD=${POCKETBASE_PASSWORD}
+      - POCKETBASE_BASE_URL="https://bz.baidua.top"
+      - POCKETBASE_EMAIL="Spike.wook@gmail.com
+      - POCKETBASE_PASSWORD="adadmin/1213"
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     restart: unless-stopped
 
 # 注意：使用 network_mode: host 时，不再需要自定义 networks 和端口映射
