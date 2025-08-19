@@ -64,14 +64,14 @@ func Load() *Config {
 		},
 		PocketBase: PocketBaseConfig{
 			BaseURL:  getEnv("POCKETBASE_URL", "https://bz.baidua.top"),
-			Email:    getEnv("POCKETBASE_EMAIL", "Spike.wook@gmail.com"),
-			Password: getEnv("POCKETBASE_PASSWORD", "adadmin/1213"),
+			Email:    getEnv("POCKETBASE_EMAIL", ""),
+			Password: getEnv("POCKETBASE_PASSWORD", ""),
 		},
 		Redis: RedisConfig{
 			Host:     getEnv("REDIS_HOST", "192.168.0.32"),
-			Port:     getEnv("REDIS_PORT", "6779"),
+			Port:     getEnv("REDIS_PORT", "6379"),
 			DB:       getEnvInt("REDIS_DB", 0),
-			Password: getEnv("REDIS_PASSWORD", "Kw7dQwFnLGAe2"),
+			Password: getEnv("REDIS_PASSWORD", ""),
 		},
 	}
 }
