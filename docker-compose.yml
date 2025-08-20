@@ -8,9 +8,9 @@ services:
     environment:
       - GIN_MODE=release
       - DATABASE_PATH=/app/data/badger_data
-      - POCKETBASE_BASE_URL="https://bz.baidua.top"
-      - POCKETBASE_EMAIL="Spike.wook@gmail.com
-      - POCKETBASE_PASSWORD="adadmin/1213"
+      - POCKETBASE_URL=https://bz.baidua.top
+      - POCKETBASE_EMAIL=Spike.wook@gmail.com
+      - POCKETBASE_PASSWORD=adadmin/1213
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_DB=${REDIS_DB}

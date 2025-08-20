@@ -37,7 +37,7 @@ docker-compose up -d
 
 ### 构建镜像
 ```bash
-docker build -t beszel-monitor .
+docker build -t imaod/beszel-monitor:latest .
 ```
 
 ### 运行容器
