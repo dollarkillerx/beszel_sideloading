@@ -185,12 +185,12 @@ const NodeManager: React.FC = () => {
               <div className="node-info-section">
                 <div className="node-info-header">
                   <span>节点信息</span>
-                  {systemNodes[system.id] && systemNodes[system.id].nodes.length > 0 && (
+                  {systemNodes[system.id]?.nodes?.length > 0 && (
                     <span className="total-online">(总在线: {systemNodes[system.id].total_online})</span>
                   )}
                 </div>
                 <div className="node-info-display">
-                  {systemNodes[system.id] && systemNodes[system.id].nodes.length > 0 ? (
+                  {systemNodes[system.id]?.nodes?.length > 0 ? (
                     <div className="nodes-list">
                       {systemNodes[system.id].nodes.map((node) => (
                         <div key={node.id} className="node-item">
